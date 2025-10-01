@@ -2,6 +2,7 @@
 
 import { Bell, Search, Settings, User } from 'lucide-react';
 import { useState } from 'react';
+import Image from 'next/image';
 import { useData } from '@/context/DataContext';
 
 export default function Topbar() {
@@ -83,9 +84,9 @@ export default function Topbar() {
             <p className="text-sm font-medium text-white">{currentUser.name}</p>
             <p className="text-xs text-gray-400 capitalize">{currentUser.role.replace('-', ' ')}</p>
           </div>
-          <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center overflow-hidden">
             {currentUser.avatar ? (
-              <img src={currentUser.avatar} alt={currentUser.name} className="w-10 h-10 rounded-full" />
+              <Image src={currentUser.avatar} alt={currentUser.name} width={40} height={40} className="rounded-full" />
             ) : (
               <User size={20} className="text-white" />
             )}

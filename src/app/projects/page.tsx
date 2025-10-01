@@ -6,7 +6,6 @@ import Card from '@/components/Card';
 import Button from '@/components/Button';
 import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
-import Table, { TableRow, TableCell } from '@/components/Table';
 import Modal from '@/components/Modal';
 import Input, { Textarea } from '@/components/Input';
 import Select from '@/components/Select';

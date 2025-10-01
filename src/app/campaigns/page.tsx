@@ -7,9 +7,9 @@ import Button from '@/components/Button';
 import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
 import Modal from '@/components/Modal';
-import Input, { Textarea } from '@/components/Input';
+import Input from '@/components/Input';
 import Select from '@/components/Select';
-import { Plus, Pencil, Trash2, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, DollarSign } from 'lucide-react';
 import { Campaign } from '@/types';
 
 export default function CampaignsPage() {
@@ -115,7 +115,6 @@ export default function CampaignsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {campaigns.map((campaign) => {
           const project = projects.find(p => p.id === campaign.projectId);
-          const responsible = users.find(u => u.id === campaign.responsiblePerson);
           
           return (
             <Card key={campaign.id}>

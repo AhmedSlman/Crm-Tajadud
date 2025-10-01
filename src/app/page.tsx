@@ -4,7 +4,7 @@ import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
-import { Users, FolderKanban, CheckSquare, Megaphone, FileText, TrendingUp } from 'lucide-react';
+import { Users, FolderKanban, CheckSquare, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Dashboard() {
@@ -77,7 +77,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-        <p className="text-gray-400">Welcome back! Here's what's happening with your projects.</p>
+        <p className="text-gray-400">Welcome back! Here&apos;s what&apos;s happening with your projects.</p>
       </div>
 
       {/* Stats Grid */}

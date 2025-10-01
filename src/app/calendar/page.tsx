@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
-import Badge from '@/components/Badge';
 import { ChevronLeft, ChevronRight, CheckCircle, Edit, Clock } from 'lucide-react';
 
 export default function CalendarPage() {

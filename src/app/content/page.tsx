@@ -8,7 +8,7 @@ import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
 import Table, { TableRow, TableCell } from '@/components/Table';
 import Modal from '@/components/Modal';
-import Input, { Textarea } from '@/components/Input';
+import Input from '@/components/Input';
 import Select from '@/components/Select';
 import { Plus, Pencil, Trash2, FileText, Calendar, User, Filter } from 'lucide-react';
 import { Content } from '@/types';
