@@ -7,7 +7,7 @@ import { Clock, User as UserIcon, Calendar } from 'lucide-react';
 
 type KanbanBoardProps = {
   tasks: Task[];
-  users: any[];
+  users: { id: string; name: string }[];
   onTaskClick: (task: Task) => void;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
 };

@@ -277,7 +277,7 @@ export default function TasksPage() {
             onChange={(e) => setFilterProject(e.target.value)}
             options={[
               { value: 'all', label: 'All Projects' },
-              ...projects.map(p => ({ value: p.id, label: p.name }))
+              ...projects.filter(p => p && p.id).map(p => ({ value: p.id, label: p.name }))
             ]}
             className="w-48"
           />
@@ -363,7 +363,7 @@ export default function TasksPage() {
               'Progress',
               'Actions'
             ]}>
-              {filteredTasks.map((task) => {
+              {filteredTasks.filter(task => task && task.id).map((task) => {
                 const assignee = users.find(u => u.id === task.assignedTo);
                 const project = projects.find(p => p.id === task.projectId);
                 const isSelected = selectedTasks.has(task.id);
@@ -482,7 +482,7 @@ export default function TasksPage() {
               label="Project (Optional)"
               value={formData.projectId}
               onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-              options={[{ value: '', label: 'No Project' }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
+              options={[{ value: '', label: 'No Project' }, ...projects.filter(p => p && p.id).map(p => ({ value: p.id, label: p.name }))]}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -513,7 +513,7 @@ export default function TasksPage() {
               label="Assigned To"
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-              options={users.filter(u => u.role !== 'client').map(u => ({ value: u.id, label: u.name }))}
+              options={users.filter(u => u && u.id && u.role !== 'client').map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">

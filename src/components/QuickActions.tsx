@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation';
 type Action = {
   id: string;
   label: string;
-  icon: any;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   action: () => void;
   shortcut?: string;
 };

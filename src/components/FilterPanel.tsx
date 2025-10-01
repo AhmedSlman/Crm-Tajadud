@@ -14,17 +14,17 @@ type FilterOption = {
 
 type FilterPanelProps = {
   filters: FilterOption[];
-  onFilterChange: (filters: Record<string, any>) => void;
-  savedFilters?: { name: string; filters: Record<string, any> }[];
+  onFilterChange: (filters: Record<string, string>) => void;
+  savedFilters?: { name: string; filters: Record<string, string> }[];
 };
 
 export default function FilterPanel({ filters, onFilterChange, savedFilters = [] }: FilterPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [filterName, setFilterName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-  const handleFilterChange = (id: string, value: any) => {
+  const handleFilterChange = (id: string, value: string) => {
     const newFilters = { ...activeFilters, [id]: value };
     setActiveFilters(newFilters);
     onFilterChange(newFilters);

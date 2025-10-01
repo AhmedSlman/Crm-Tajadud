@@ -158,7 +158,7 @@ export default function ClientsPage() {
           />
         ) : (
           <Table headers={['Client', 'Contact', 'Company', 'Projects', 'Actions']}>
-            {filteredClients.map((client) => {
+            {filteredClients.filter(client => client && client.id).map((client) => {
               const clientProjects = getClientProjects(client.id);
               return (
                 <TableRow key={client.id}>

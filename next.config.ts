@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Production optimizations
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  // Uncomment for Docker/standalone deployment:
+  // output: 'standalone',
 };
 
 export default nextConfig;

@@ -15,8 +15,8 @@ type ContentPlanTableProps = {
   onTaskUpdate: (id: string, updates: Partial<Task>) => void;
   onTaskDelete: (id: string) => void;
   onTaskAdd: (task: Task) => void;
-  users: any[];
-  clients: any[];
+  users: { id: string; name: string; role: string }[];
+  clients: { id: string; name: string; linkedProjects: string[] }[];
 };
 
 export default function ContentPlanTable({ 
@@ -100,7 +100,7 @@ export default function ContentPlanTable({
             {tasks.map((task, index) => {
               const owner = users.find(u => u.id === task.createdBy);
               const member = users.find(u => u.id === task.assignedTo);
-              const client = task.projectId ? clients.find(c => c.linkedProjects.includes(task.projectId)) : null;
+              const client = task.projectId ? clients.find(c => c.linkedProjects.includes(task.projectId!)) : null;
               
               return (
                 <tr key={task.id} className="bg-gradient-to-br from-[#14102a] to-[#1a1333] hover:from-[#1a1333] hover:to-[#241a47] transition-all duration-300">

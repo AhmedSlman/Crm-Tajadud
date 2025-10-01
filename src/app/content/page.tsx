@@ -156,7 +156,7 @@ export default function ContentPage() {
           </div>
         ) : (
           <Table headers={['Title', 'Type', 'Status', 'Priority', 'Assigned To', 'Due Date', 'Progress', 'Actions']}>
-            {filteredContent.map((contentItem) => {
+            {filteredContent.filter(contentItem => contentItem && contentItem.id).map((contentItem) => {
               const assignee = users.find(u => u.id === contentItem.assignedTo);
               const project = projects.find(p => p.id === contentItem.projectId);
               

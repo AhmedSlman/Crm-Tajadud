@@ -166,7 +166,7 @@ export default function ProjectsPage() {
                 { value: 'planned', label: 'Planned' },
                 { value: 'in-progress', label: 'In Progress' },
                 { value: 'completed', label: 'Completed' },
-                { value: 'on-hold', label: 'On Hold' },
+                { value: 'on-hold', label: 'On Hold' }
               ]}
             />
           </div>
@@ -178,7 +178,7 @@ export default function ProjectsPage() {
               onChange={(e) => setFilterClient(e.target.value)}
               options={[
                 { value: 'all', label: 'All Clients' },
-                ...clients.map(c => ({ value: c.id, label: c.name }))
+                ...clients.filter(c => c && c.id).map(c => ({ value: c.id, label: c.name }))
               ]}
             />
           </div>

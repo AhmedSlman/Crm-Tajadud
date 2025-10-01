@@ -36,7 +36,7 @@ export function getRelativeTime(date: string | Date): string {
   return `Due in ${Math.floor(days / 30)} months`;
 }
 
-export function exportToCSV(data: any[], filename: string) {
+export function exportToCSV(data: Record<string, unknown>[], filename: string) {
   if (!data || data.length === 0) return;
 
   const headers = Object.keys(data[0]);
@@ -62,7 +62,7 @@ export function exportToCSV(data: any[], filename: string) {
   window.URL.revokeObjectURL(url);
 }
 
-export function searchInObject(obj: any, query: string): boolean {
+export function searchInObject(obj: Record<string, unknown>, query: string): boolean {
   const searchQuery = query.toLowerCase();
   
   return Object.values(obj).some(value => {
