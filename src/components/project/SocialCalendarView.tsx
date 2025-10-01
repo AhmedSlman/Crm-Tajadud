@@ -25,10 +25,11 @@ export default function SocialCalendarView({ month, projectId }: SocialCalendarV
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Get ready content (approved and ready for calendar)
+  // Get ready content (approved and ready for calendar, not yet scheduled)
   const readyContent = content.filter(c => 
     c.projectId === projectId && 
-    c.readyForCalendar === true
+    c.readyForCalendar === true &&
+    !c.publishDate // Only show content that hasn't been scheduled yet
   );
 
   // Get content for calendar (scheduled or published)

@@ -1,17 +1,125 @@
 'use client';
 
+import { useState } from 'react';
+import { useData } from '@/context/DataContext';
 import { Campaign } from '@/types';
 import Card from '@/components/Card';
 import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
-import { Megaphone, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import Button from '@/components/Button';
+import Modal from '@/components/Modal';
+import Input, { Textarea } from '@/components/Input';
+import Select from '@/components/Select';
+import { Megaphone, DollarSign, Calendar, TrendingUp, Plus, Edit, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 type CampaignContentProps = {
   campaigns: Campaign[];
   projectId: string;
 };
 
-export default function CampaignContent({ campaigns }: CampaignContentProps) {
+export default function CampaignContent({ campaigns, projectId }: CampaignContentProps) {
+  const { addCampaign, updateCampaign, deleteCampaign, users } = useData();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'facebook-ads' as Campaign['type'],
+    objective: 'awareness' as Campaign['objective'],
+    startDate: '',
+    endDate: '',
+    budget: 0,
+    status: 'planned' as Campaign['status'],
+    responsiblePerson: users[0]?.id || '',
+  });
+
+  const handleAddCampaign = async () => {
+    if (!formData.name || !formData.startDate || !formData.endDate) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    try {
+      await addCampaign({
+        name: formData.name,
+        projectId,
+        type: formData.type,
+        objective: formData.objective,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        budget: formData.budget,
+        status: formData.status,
+        responsiblePerson: formData.responsiblePerson,
+        createdBy: '1',
+        progress: 0,
+      });
+
+      toast.success(`${formData.name} created! 🎉`, {
+        description: 'Campaign has been added to the project',
+      });
+
+      setIsModalOpen(false);
+      setFormData({
+        name: '',
+        type: 'facebook-ads',
+        objective: 'awareness',
+        startDate: '',
+        endDate: '',
+        budget: 0,
+        status: 'planned',
+        responsiblePerson: users[0]?.id || '',
+      });
+    } catch (error) {
+      toast.error('Failed to create campaign');
+    }
+  };
+
+  const handleEditCampaign = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCampaign) return;
+
+    if (!editingCampaign.name || !editingCampaign.startDate || !editingCampaign.endDate) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    try {
+      await updateCampaign(editingCampaign.id, {
+        name: editingCampaign.name,
+        type: editingCampaign.type,
+        objective: editingCampaign.objective,
+        startDate: editingCampaign.startDate,
+        endDate: editingCampaign.endDate,
+        budget: editingCampaign.budget,
+        status: editingCampaign.status,
+        responsiblePerson: editingCampaign.responsiblePerson,
+      });
+
+      toast.success('Campaign updated! ✅');
+      setIsEditModalOpen(false);
+      setEditingCampaign(null);
+    } catch (error) {
+      toast.error('Failed to update campaign');
+    }
+  };
+
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      const campaign = campaigns.find(c => c.id === campaignId);
+      await deleteCampaign(campaignId);
+      toast.success(`${campaign?.name} deleted! 🗑️`);
+      setDeleteConfirmId(null);
+    } catch (error) {
+      toast.error('Failed to delete campaign');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
       'completed': 'success',
@@ -24,11 +132,17 @@ export default function CampaignContent({ campaigns }: CampaignContentProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-white mb-2">Campaigns</h2>
-        <p className="text-sm text-gray-400">
-          Track campaign performance and content readiness
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white mb-2">Campaigns</h2>
+          <p className="text-sm text-gray-400">
+            Track campaign performance and content readiness
+          </p>
+        </div>
+        <Button onClick={() => setIsModalOpen(true)}>
+          <Plus size={18} className="mr-2" />
+          Create Campaign
+        </Button>
       </div>
 
       {campaigns.length === 0 ? (
@@ -90,7 +204,7 @@ export default function CampaignContent({ campaigns }: CampaignContentProps) {
 
                 {/* KPIs */}
                 {campaign.kpis && campaign.kpis.length > 0 && (
-                  <div className="border-t border-[#563EB7]/20 pt-4">
+                  <div className="border-t border-[#563EB7]/20 pt-4 mb-4">
                     <div className="flex items-center gap-2 text-gray-400 text-xs mb-3">
                       <TrendingUp size={14} />
                       <span>Key Metrics</span>
@@ -105,10 +219,265 @@ export default function CampaignContent({ campaigns }: CampaignContentProps) {
                     </div>
                   </div>
                 )}
+
+                {/* Actions */}
+                <div className="border-t border-[#563EB7]/20 pt-4 flex items-center gap-2">
+                  {/* Edit Button */}
+                  <button
+                    onClick={() => handleEditCampaign(campaign)}
+                    className="flex-1 py-2 px-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <Edit size={16} />
+                    <span className="text-sm font-medium">Edit</span>
+                  </button>
+
+                  {/* Delete Button */}
+                  {deleteConfirmId === campaign.id ? (
+                    <div className="flex-1 flex items-center gap-1">
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign.id)}
+                        className="flex-1 py-2 px-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs font-medium"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmId(null)}
+                        className="flex-1 py-2 px-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-xs font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setDeleteConfirmId(campaign.id)}
+                      className="flex-1 py-2 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={16} />
+                      <span className="text-sm font-medium">Delete</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Create Campaign Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Create New Campaign"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCampaign}>
+              Create Campaign
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Campaign Name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Enter campaign name"
+            required
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Campaign Type"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as Campaign['type'] })}
+              options={[
+                { value: 'facebook-ads', label: 'Facebook Ads' },
+                { value: 'instagram-ads', label: 'Instagram Ads' },
+                { value: 'google-ads', label: 'Google Ads' },
+                { value: 'linkedin-ads', label: 'LinkedIn Ads' },
+                { value: 'email-marketing', label: 'Email Marketing' },
+                { value: 'offline-campaign', label: 'Offline Campaign' },
+              ]}
+            />
+
+            <Select
+              label="Objective"
+              value={formData.objective}
+              onChange={(e) => setFormData({ ...formData, objective: e.target.value as Campaign['objective'] })}
+              options={[
+                { value: 'awareness', label: 'Awareness' },
+                { value: 'engagement', label: 'Engagement' },
+                { value: 'leads', label: 'Leads' },
+                { value: 'sales', label: 'Sales' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Start Date"
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              required
+            />
+
+            <Input
+              label="End Date"
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Budget ($)"
+              type="number"
+              min="0"
+              value={formData.budget.toString()}
+              onChange={(e) => setFormData({ ...formData, budget: parseInt(e.target.value) || 0 })}
+              placeholder="0"
+            />
+
+            <Select
+              label="Status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as Campaign['status'] })}
+              options={[
+                { value: 'planned', label: 'Planned' },
+                { value: 'running', label: 'Running' },
+                { value: 'paused', label: 'Paused' },
+                { value: 'completed', label: 'Completed' },
+              ]}
+            />
+          </div>
+
+          <Select
+            label="Responsible Person"
+            value={formData.responsiblePerson}
+            onChange={(e) => setFormData({ ...formData, responsiblePerson: e.target.value })}
+            options={users.map(u => ({ value: u.id, label: u.name }))}
+          />
+        </div>
+      </Modal>
+
+      {/* Edit Campaign Modal */}
+      {editingCampaign && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingCampaign(null);
+          }}
+          title="Edit Campaign"
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingCampaign(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                Save Changes
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <Input
+              label="Campaign Name"
+              value={editingCampaign.name}
+              onChange={(e) => setEditingCampaign({ ...editingCampaign, name: e.target.value })}
+              placeholder="Enter campaign name"
+              required
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Campaign Type"
+                value={editingCampaign.type}
+                onChange={(e) => setEditingCampaign({ ...editingCampaign, type: e.target.value as Campaign['type'] })}
+                options={[
+                  { value: 'facebook-ads', label: 'Facebook Ads' },
+                  { value: 'instagram-ads', label: 'Instagram Ads' },
+                  { value: 'google-ads', label: 'Google Ads' },
+                  { value: 'linkedin-ads', label: 'LinkedIn Ads' },
+                  { value: 'email-marketing', label: 'Email Marketing' },
+                  { value: 'offline-campaign', label: 'Offline Campaign' },
+                ]}
+              />
+
+              <Select
+                label="Objective"
+                value={editingCampaign.objective}
+                onChange={(e) => setEditingCampaign({ ...editingCampaign, objective: e.target.value as Campaign['objective'] })}
+                options={[
+                  { value: 'awareness', label: 'Awareness' },
+                  { value: 'engagement', label: 'Engagement' },
+                  { value: 'leads', label: 'Leads' },
+                  { value: 'sales', label: 'Sales' },
+                ]}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Start Date"
+                type="date"
+                value={editingCampaign.startDate}
+                onChange={(e) => setEditingCampaign({ ...editingCampaign, startDate: e.target.value })}
+                required
+              />
+
+              <Input
+                label="End Date"
+                type="date"
+                value={editingCampaign.endDate}
+                onChange={(e) => setEditingCampaign({ ...editingCampaign, endDate: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Budget ($)"
+                type="number"
+                min="0"
+                value={editingCampaign.budget.toString()}
+                onChange={(e) => setEditingCampaign({ ...editingCampaign, budget: parseInt(e.target.value) || 0 })}
+                placeholder="0"
+              />
+
+              <Select
+                label="Status"
+                value={editingCampaign.status}
+                onChange={(e) => setEditingCampaign({ ...editingCampaign, status: e.target.value as Campaign['status'] })}
+                options={[
+                  { value: 'planned', label: 'Planned' },
+                  { value: 'running', label: 'Running' },
+                  { value: 'paused', label: 'Paused' },
+                  { value: 'completed', label: 'Completed' },
+                ]}
+              />
+            </div>
+
+            <Select
+              label="Responsible Person"
+              value={editingCampaign.responsiblePerson}
+              onChange={(e) => setEditingCampaign({ ...editingCampaign, responsiblePerson: e.target.value })}
+              options={users.map(u => ({ value: u.id, label: u.name }))}
+            />
+          </div>
+        </Modal>
       )}
     </div>
   );
