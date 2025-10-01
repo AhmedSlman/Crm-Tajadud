@@ -513,7 +513,7 @@ export default function TasksPage() {
               label="Assigned To"
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-              options={users.filter(u => u && u.id && u.role !== 'client').map(u => ({ value: u.id, label: u.name }))}
+              options={users.filter(u => u && u.id).map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">

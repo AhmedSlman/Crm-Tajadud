@@ -123,6 +123,16 @@ export type Content = {
   comments: Comment[];
   progress: number;
   createdAt: string;
+  // Content Plan specific fields
+  designBrief?: string;
+  inspiration?: string;
+  design?: string;
+  textContent?: string;
+  driveLink?: string;
+  notes?: string;
+  month?: string; // Which month this content belongs to
+  isReel?: boolean; // Is this a reel or regular content
+  readyForCalendar?: boolean; // Ready to be dragged to social calendar
 };
 
 export type Attachment = {

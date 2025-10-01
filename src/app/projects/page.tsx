@@ -14,6 +14,7 @@ import EmptyState from '@/components/EmptyState';
 import { Plus, Pencil, Trash2, Calendar, User, Download, FolderKanban, TrendingUp } from 'lucide-react';
 import { Project } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
+import Link from 'next/link';
 
 export default function ProjectsPage() {
   const { projects, clients, users, addProject, updateProject, deleteProject } = useData();
@@ -244,12 +245,12 @@ export default function ProjectsPage() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-[#563EB7]/20 flex items-center gap-2">
-                  <a href={`/projects/${project.id}`} className="flex-1">
+                  <Link href={`/projects/${project.id}`} className="flex-1">
                     <Button size="sm" variant="primary" className="w-full">
-                      <Calendar size={14} className="mr-1" />
-                      View Monthly
+                      <TrendingUp size={14} className="mr-1" />
+                      Open Project
                     </Button>
-                  </a>
+                  </Link>
                   <Button size="sm" variant="secondary" onClick={() => handleOpenModal(project)}>
                     <Pencil size={14} />
                   </Button>
@@ -329,7 +330,7 @@ export default function ProjectsPage() {
               label="Project Manager"
               value={formData.projectManager}
               onChange={(e) => setFormData({ ...formData, projectManager: e.target.value })}
-              options={users.filter(u => u.role !== 'client').map(u => ({ value: u.id, label: u.name }))}
+              options={users.map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
           <Input

@@ -80,7 +80,7 @@ export default function ReportsPage() {
 
   // Team Workload
   const teamWorkload = useMemo(() => {
-    const workload = users.filter(u => u.role !== 'client').map(user => {
+    const workload = users.map(user => {
       const userTasks = filteredTasks.filter(t => t.assignedTo === user.id);
       const userContent = filteredContent.filter(c => c.assignedTo === user.id);
       

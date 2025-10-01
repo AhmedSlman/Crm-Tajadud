@@ -43,7 +43,7 @@ export default function PendingApprovalPage() {
                 <div className="flex-1">
                   <h3 className="text-white font-semibold mb-1">Check Your Email</h3>
                   <p className="text-sm text-gray-400">
-                    You'll receive an email notification once your account has been reviewed and approved.
+                    You&apos;ll receive an email notification once your account has been reviewed and approved.
                   </p>
                 </div>
               </div>
@@ -55,10 +55,10 @@ export default function PendingApprovalPage() {
                   <CheckCircle className="text-green-400" size={20} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-white font-semibold mb-1">What's Next?</h3>
+                  <h3 className="text-white font-semibold mb-1">What&apos;s Next?</h3>
                   <p className="text-sm text-gray-400">
                     An admin will review your application. This typically takes 24-48 hours. 
-                    Once approved, you'll be able to sign in and start working!
+                    Once approved, you&apos;ll be able to sign in and start working!
                   </p>
                 </div>
               </div>

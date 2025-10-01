@@ -290,7 +290,7 @@ export default function CampaignsPage() {
               label="Responsible Person"
               value={formData.responsiblePerson}
               onChange={(e) => setFormData({ ...formData, responsiblePerson: e.target.value })}
-              options={users.filter(u => u.role !== 'client').map(u => ({ value: u.id, label: u.name }))}
+              options={users.map(u => ({ value: u.id, label: u.name }))}
             />
             <Input
               label="Progress (%)"

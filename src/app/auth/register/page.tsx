@@ -175,7 +175,7 @@ export default function RegisterPage() {
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
               <p className="text-blue-400 text-sm">
                 <strong>📌 Note:</strong> Your account will be pending until approved by an admin. 
-                You'll be notified once your account is activated.
+                You&apos;ll be notified once your account is activated.
               </p>
             </div>
 

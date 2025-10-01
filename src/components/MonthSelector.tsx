@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 
 type MonthSelectorProps = {
-  selectedDate: Date;
-  onDateChange: (date: Date) => void;
+  selectedMonth: Date;
+  onMonthChange: (date: Date) => void;
   availableMonths?: { month: number; year: number; count: number }[];
 };
 
-export default function MonthSelector({ selectedDate, onDateChange, availableMonths = [] }: MonthSelectorProps) {
+export default function MonthSelector({ selectedMonth, onMonthChange, availableMonths = [] }: MonthSelectorProps) {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   
   const monthNames = [
@@ -17,25 +17,25 @@ export default function MonthSelector({ selectedDate, onDateChange, availableMon
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const currentMonth = selectedDate.getMonth();
-  const currentYear = selectedDate.getFullYear();
+  const currentMonth = selectedMonth.getMonth();
+  const currentYear = selectedMonth.getFullYear();
 
   const previousMonth = () => {
     const newDate = new Date(currentYear, currentMonth - 1, 1);
-    onDateChange(newDate);
+    onMonthChange(newDate);
   };
 
   const nextMonth = () => {
     const newDate = new Date(currentYear, currentMonth + 1, 1);
-    onDateChange(newDate);
+    onMonthChange(newDate);
   };
 
   const goToToday = () => {
-    onDateChange(new Date());
+    onMonthChange(new Date());
   };
 
   const selectMonth = (month: number, year: number) => {
-    onDateChange(new Date(year, month, 1));
+    onMonthChange(new Date(year, month, 1));
     setShowMonthPicker(false);
   };
 
