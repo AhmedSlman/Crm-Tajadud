@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
@@ -9,13 +9,19 @@ import ProgressBar from '@/components/ProgressBar';
 import Modal from '@/components/Modal';
 import Input, { Textarea } from '@/components/Input';
 import Select from '@/components/Select';
-import { Plus, Pencil, Trash2, Calendar, User } from 'lucide-react';
+import SearchBar from '@/components/SearchBar';
+import EmptyState from '@/components/EmptyState';
+import { Plus, Pencil, Trash2, Calendar, User, Download, FolderKanban, TrendingUp } from 'lucide-react';
 import { Project } from '@/types';
+import { exportToCSV, searchInObject } from '@/lib/utils';
 
 export default function ProjectsPage() {
   const { projects, clients, users, addProject, updateProject, deleteProject } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterClient, setFilterClient] = useState<string>('all');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -91,21 +97,119 @@ export default function ProjectsPage() {
     return statusMap[status] || 'default';
   };
 
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+      if (filterStatus !== 'all' && project.status !== filterStatus) return false;
+      if (filterClient !== 'all' && project.clientId !== filterClient) return false;
+      if (searchQuery && !searchInObject(project, searchQuery)) return false;
+      return true;
+    });
+  }, [projects, filterStatus, filterClient, searchQuery]);
+
+  const handleExport = () => {
+    const exportData = filteredProjects.map(project => {
+      const client = clients.find(c => c.id === project.clientId);
+      const manager = users.find(u => u.id === project.projectManager);
+      
+      return {
+        Name: project.name,
+        Description: project.description,
+        Client: client?.name || '',
+        'Project Manager': manager?.name || '',
+        Status: project.status,
+        'Start Date': project.startDate,
+        'End Date': project.endDate,
+        'Progress': `${project.progress}%`,
+        'Total Tasks': project.linkedTasks.length,
+        'Total Campaigns': project.linkedCampaigns.length,
+      };
+    });
+    exportToCSV(exportData, 'projects');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Projects</h1>
-          <p className="text-gray-400">Manage all your client projects</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2">
+            Projects
+          </h1>
+          <p className="text-gray-400 text-lg">Manage all your client projects</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={20} className="mr-2" />
-          New Project
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={handleExport}>
+            <Download size={20} className="mr-2" />
+            Export
+          </Button>
+          <Button onClick={() => handleOpenModal()}>
+            <Plus size={20} className="mr-2" />
+            New Project
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => {
+      {/* Search */}
+      <SearchBar
+        placeholder="Search projects by name, description, client..."
+        onSearch={setSearchQuery}
+      />
+
+      {/* Filters & Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <Card hover={false}>
+          <div className="p-4">
+            <Select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'planned', label: 'Planned' },
+                { value: 'in-progress', label: 'In Progress' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'on-hold', label: 'On Hold' },
+              ]}
+            />
+          </div>
+        </Card>
+        <Card hover={false}>
+          <div className="p-4">
+            <Select
+              value={filterClient}
+              onChange={(e) => setFilterClient(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Clients' },
+                ...clients.map(c => ({ value: c.id, label: c.name }))
+              ]}
+            />
+          </div>
+        </Card>
+        <Card hover={false}>
+          <div className="p-4 text-center">
+            <div className="text-2xl font-bold text-[#563EB7] mb-1">{filteredProjects.length}</div>
+            <p className="text-xs text-gray-400">Showing</p>
+          </div>
+        </Card>
+        <Card hover={false}>
+          <div className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-400 mb-1">
+              {Math.round(filteredProjects.reduce((sum, p) => sum + p.progress, 0) / (filteredProjects.length || 1))}%
+            </div>
+            <p className="text-xs text-gray-400">Avg Progress</p>
+          </div>
+        </Card>
+      </div>
+
+      {filteredProjects.length === 0 ? (
+        <EmptyState
+          icon={<FolderKanban size={48} className="text-[#563EB7]" />}
+          title={searchQuery ? 'No projects found' : 'No projects yet'}
+          description={searchQuery ? 'Try adjusting your search or filters' : 'Create your first project to get started'}
+          actionLabel={searchQuery ? undefined : 'Create Your First Project'}
+          onAction={searchQuery ? undefined : () => handleOpenModal()}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map((project) => {
           const client = clients.find(c => c.id === project.clientId);
           const manager = users.find(u => u.id === project.projectManager);
           
@@ -114,7 +218,9 @@ export default function ProjectsPage() {
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white mb-1">{project.name}</h3>
+                    <h3 className="text-lg font-semibold text-white mb-1 hover:text-[#a78bfa] transition-colors cursor-pointer">
+                      <a href={`/projects/${project.id}`}>{project.name}</a>
+                    </h3>
                     <p className="text-sm text-gray-400">{client?.name}</p>
                   </div>
                   <Badge variant={getStatusBadge(project.status)}>
@@ -138,9 +244,14 @@ export default function ProjectsPage() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-[#563EB7]/20 flex items-center gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => handleOpenModal(project)} className="flex-1">
-                    <Pencil size={14} className="mr-1" />
-                    Edit
+                  <a href={`/projects/${project.id}`} className="flex-1">
+                    <Button size="sm" variant="primary" className="w-full">
+                      <Calendar size={14} className="mr-1" />
+                      View Monthly
+                    </Button>
+                  </a>
+                  <Button size="sm" variant="secondary" onClick={() => handleOpenModal(project)}>
+                    <Pencil size={14} />
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => handleDelete(project.id)}>
                     <Trash2 size={14} className="text-red-400" />
@@ -149,19 +260,8 @@ export default function ProjectsPage() {
               </div>
             </Card>
           );
-        })}
-      </div>
-
-      {projects.length === 0 && (
-        <Card>
-          <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">No projects yet</p>
-            <Button onClick={() => handleOpenModal()}>
-              <Plus size={20} className="mr-2" />
-              Create Your First Project
-            </Button>
-          </div>
-        </Card>
+          })}
+        </div>
       )}
 
       <Modal

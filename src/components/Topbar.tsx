@@ -11,34 +11,35 @@ export default function Topbar() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="h-16 bg-[#14102a] border-b border-[#563EB7]/20 fixed top-0 right-0 left-64 z-10 flex items-center justify-between px-6">
+    <div className="h-16 bg-gradient-to-r from-[#14102a] via-[#1a1333] to-[#14102a] border-b border-[#563EB7]/30 fixed top-0 right-0 left-64 z-10 flex items-center justify-between px-6 backdrop-blur-xl shadow-lg shadow-black/20">
       <div className="flex-1 max-w-xl">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#563EB7] transition-colors" size={20} />
           <input
             type="text"
             placeholder="Search projects, tasks, clients..."
-            className="w-full bg-[#1a1333] border border-[#563EB7]/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-[#563EB7] transition-colors"
+            className="w-full bg-gradient-to-r from-[#1a1333] to-[#14102a] border border-[#563EB7]/20 rounded-xl pl-12 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:border-[#563EB7] focus:shadow-lg focus:shadow-[#563EB7]/20 transition-all duration-300"
           />
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#563EB7]/0 to-[#563EB7]/0 group-focus-within:from-[#563EB7]/5 group-focus-within:to-transparent transition-all duration-300 pointer-events-none" />
         </div>
       </div>
 
-      <div className="flex items-center gap-4 ml-6">
+      <div className="flex items-center gap-3 ml-6">
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 text-gray-300 hover:text-white hover:bg-[#1a1333] rounded-lg transition-colors"
+            className="relative p-2.5 text-gray-300 hover:text-white hover:bg-[#1a1333] rounded-xl transition-all duration-300 hover:scale-110 group"
           >
-            <Bell size={20} />
+            <Bell size={20} className="group-hover:animate-pulse" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-rose-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg shadow-red-500/50 animate-pulse">
                 {unreadCount}
               </span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-[#1a1333] border border-[#563EB7]/20 rounded-lg shadow-xl overflow-hidden">
+            <div className="absolute right-0 mt-2 w-80 bg-gradient-to-br from-[#1a1333] to-[#14102a] border border-[#563EB7]/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-scaleIn backdrop-blur-xl">
               <div className="p-4 border-b border-[#563EB7]/20">
                 <h3 className="font-semibold text-white">Notifications</h3>
               </div>
@@ -75,21 +76,24 @@ export default function Topbar() {
           )}
         </div>
 
-        <button className="p-2 text-gray-300 hover:text-white hover:bg-[#1a1333] rounded-lg transition-colors">
+        <button className="p-2.5 text-gray-300 hover:text-white hover:bg-[#1a1333] rounded-xl transition-all duration-300 hover:scale-110 hover:rotate-90">
           <Settings size={20} />
         </button>
 
-        <div className="flex items-center gap-3 pl-4 border-l border-[#563EB7]/20">
+        <div className="flex items-center gap-3 pl-4 border-l border-[#563EB7]/30">
           <div className="text-right">
-            <p className="text-sm font-medium text-white">{currentUser.name}</p>
-            <p className="text-xs text-gray-400 capitalize">{currentUser.role.replace('-', ' ')}</p>
+            <p className="text-sm font-semibold text-white">{currentUser.name}</p>
+            <p className="text-xs text-gray-400 capitalize font-medium">{currentUser.role.replace('-', ' ')}</p>
           </div>
-          <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center overflow-hidden">
-            {currentUser.avatar ? (
-              <Image src={currentUser.avatar} alt={currentUser.name} width={40} height={40} className="rounded-full" />
-            ) : (
-              <User size={20} className="text-white" />
-            )}
+          <div className="relative group cursor-pointer">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center overflow-hidden shadow-lg shadow-[#563EB7]/50 group-hover:shadow-[#563EB7]/80 transition-all duration-300 group-hover:scale-110">
+              {currentUser.avatar ? (
+                <Image src={currentUser.avatar} alt={currentUser.name} width={40} height={40} className="rounded-full" />
+              ) : (
+                <User size={20} className="text-white" />
+              )}
+            </div>
+            <div className="absolute -inset-1 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full opacity-0 group-hover:opacity-30 blur-md transition-opacity duration-300" />
           </div>
         </div>
       </div>

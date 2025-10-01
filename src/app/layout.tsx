@@ -4,6 +4,7 @@ import "./globals.css";
 import { DataProvider } from "@/context/DataContext";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import QuickActions from "@/components/QuickActions";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,11 +32,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <DataProvider>
-          <Sidebar />
-          <Topbar />
-          <main className="ml-64 mt-16 p-6">
-            {children}
-          </main>
+          <div className="relative min-h-screen">
+            <Sidebar />
+            <Topbar />
+            <main className="relative z-0 ml-64 mt-16 p-8 min-h-screen">
+              {children}
+            </main>
+            <QuickActions />
+          </div>
         </DataProvider>
       </body>
     </html>

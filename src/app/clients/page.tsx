@@ -1,19 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
 import Table, { TableRow, TableCell } from '@/components/Table';
 import Modal from '@/components/Modal';
 import Input, { Textarea } from '@/components/Input';
-import { Plus, Pencil, Trash2, Mail, Phone, Building } from 'lucide-react';
+import SearchBar from '@/components/SearchBar';
+import EmptyState from '@/components/EmptyState';
+import { Plus, Pencil, Trash2, Mail, Phone, Building, Download, Users as UsersIcon } from 'lucide-react';
 import { Client } from '@/types';
+import { exportToCSV, searchInObject } from '@/lib/utils';
 
 export default function ClientsPage() {
   const { clients, addClient, updateClient, deleteClient, projects } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     contactPerson: '',
@@ -73,31 +77,88 @@ export default function ClientsPage() {
     return projects.filter(p => p.clientId === clientId);
   };
 
+  const filteredClients = useMemo(() => {
+    if (!searchQuery) return clients;
+    return clients.filter(client => searchInObject(client, searchQuery));
+  }, [clients, searchQuery]);
+
+  const handleExport = () => {
+    const exportData = clients.map(client => ({
+      Name: client.name,
+      'Contact Person': client.contactPerson,
+      Phone: client.phone,
+      Email: client.email,
+      Company: client.company,
+      'Total Projects': getClientProjects(client.id).length,
+      Notes: client.notes,
+      'Created At': client.createdAt,
+    }));
+    exportToCSV(exportData, 'clients');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Clients</h1>
-          <p className="text-gray-400">Manage your client relationships</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2">
+            Clients
+          </h1>
+          <p className="text-gray-400 text-lg">Manage your client relationships</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={20} className="mr-2" />
-          Add Client
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={handleExport}>
+            <Download size={20} className="mr-2" />
+            Export
+          </Button>
+          <Button onClick={() => handleOpenModal()}>
+            <Plus size={20} className="mr-2" />
+            Add Client
+          </Button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <SearchBar
+        placeholder="Search clients by name, email, company..."
+        onSearch={setSearchQuery}
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card hover={false}>
+          <div className="p-4 text-center">
+            <div className="text-3xl font-bold text-[#563EB7] mb-2">{clients.length}</div>
+            <p className="text-sm text-gray-400">Total Clients</p>
+          </div>
+        </Card>
+        <Card hover={false}>
+          <div className="p-4 text-center">
+            <div className="text-3xl font-bold text-blue-400 mb-2">{projects.length}</div>
+            <p className="text-sm text-gray-400">Total Projects</p>
+          </div>
+        </Card>
+        <Card hover={false}>
+          <div className="p-4 text-center">
+            <div className="text-3xl font-bold text-green-400 mb-2">
+              {projects.filter(p => p.status === 'in-progress').length}
+            </div>
+            <p className="text-sm text-gray-400">Active Projects</p>
+          </div>
+        </Card>
       </div>
 
       <Card>
-        {clients.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">No clients yet</p>
-            <Button onClick={() => handleOpenModal()}>
-              <Plus size={20} className="mr-2" />
-              Add Your First Client
-            </Button>
-          </div>
+        {filteredClients.length === 0 ? (
+          <EmptyState
+            icon={<UsersIcon size={48} className="text-[#563EB7]" />}
+            title={searchQuery ? 'No clients found' : 'No clients yet'}
+            description={searchQuery ? 'Try adjusting your search query' : 'Add your first client to get started'}
+            actionLabel={searchQuery ? undefined : 'Add Your First Client'}
+            onAction={searchQuery ? undefined : () => handleOpenModal()}
+          />
         ) : (
           <Table headers={['Client', 'Contact', 'Company', 'Projects', 'Actions']}>
-            {clients.map((client) => {
+            {filteredClients.map((client) => {
               const clientProjects = getClientProjects(client.id);
               return (
                 <TableRow key={client.id}>
