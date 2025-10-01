@@ -1,103 +1,185 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useData } from '@/context/DataContext';
+import Card from '@/components/Card';
+import Badge from '@/components/Badge';
+import ProgressBar from '@/components/ProgressBar';
+import { Users, FolderKanban, CheckSquare, Megaphone, FileText, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
+
+export default function Dashboard() {
+  const { clients, projects, tasks, campaigns, content } = useData();
+
+  const stats = [
+    { 
+      name: 'Total Clients', 
+      value: clients.length, 
+      icon: Users, 
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/20',
+      link: '/clients'
+    },
+    { 
+      name: 'Active Projects', 
+      value: projects.filter(p => p.status === 'in-progress').length, 
+      icon: FolderKanban, 
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-500/20',
+      link: '/projects'
+    },
+    { 
+      name: 'Pending Tasks', 
+      value: tasks.filter(t => t.status !== 'done').length, 
+      icon: CheckSquare, 
+      color: 'text-green-400',
+      bgColor: 'bg-green-500/20',
+      link: '/tasks'
+    },
+    { 
+      name: 'Running Campaigns', 
+      value: campaigns.filter(c => c.status === 'running').length, 
+      icon: Megaphone, 
+      color: 'text-orange-400',
+      bgColor: 'bg-orange-500/20',
+      link: '/campaigns'
+    },
+  ];
+
+  const recentTasks = tasks.slice(0, 5);
+  const activeProjects = projects.filter(p => p.status === 'in-progress').slice(0, 5);
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
+      'done': 'success',
+      'completed': 'success',
+      'in-progress': 'info',
+      'running': 'info',
+      'review': 'warning',
+      'planned': 'default',
+      'to-do': 'default',
+      'delayed': 'danger',
+      'on-hold': 'warning',
+    };
+    return statusMap[status] || 'default';
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityMap: Record<string, 'danger' | 'warning' | 'info' | 'default'> = {
+      'urgent': 'danger',
+      'high': 'warning',
+      'medium': 'info',
+      'low': 'default',
+    };
+    return priorityMap[priority] || 'default';
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+        <p className="text-gray-400">Welcome back! Here's what's happening with your projects.</p>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Link key={stat.name} href={stat.link}>
+              <Card className="hover:border-[#563EB7]/40 transition-colors cursor-pointer">
+                <div className="p-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm mb-1">{stat.name}</p>
+                    <p className="text-3xl font-bold text-white">{stat.value}</p>
+                  </div>
+                  <div className={`${stat.bgColor} ${stat.color} p-4 rounded-lg`}>
+                    <Icon size={28} />
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Active Projects & Recent Tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Active Projects */}
+        <Card title="Active Projects" action={<Link href="/projects" className="text-sm text-[#563EB7] hover:text-[#6d4dd4]">View All</Link>}>
+          <div className="space-y-4">
+            {activeProjects.length === 0 ? (
+              <p className="text-gray-400 text-center py-8">No active projects</p>
+            ) : (
+              activeProjects.map((project) => (
+                <div key={project.id} className="p-4 bg-[#1a1333] rounded-lg hover:bg-[#241a47] transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-white mb-1">{project.name}</h4>
+                      <p className="text-sm text-gray-400 line-clamp-1">{project.description}</p>
+                    </div>
+                    <Badge variant={getStatusBadge(project.status)}>
+                      {project.status.replace('-', ' ')}
+                    </Badge>
+                  </div>
+                  <ProgressBar progress={project.progress} size="sm" />
+                  <div className="mt-2 text-xs text-gray-400">
+                    Due: {new Date(project.endDate).toLocaleDateString()}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        {/* Recent Tasks */}
+        <Card title="Recent Tasks" action={<Link href="/tasks" className="text-sm text-[#563EB7] hover:text-[#6d4dd4]">View All</Link>}>
+          <div className="space-y-4">
+            {recentTasks.length === 0 ? (
+              <p className="text-gray-400 text-center py-8">No tasks</p>
+            ) : (
+              recentTasks.map((task) => (
+                <div key={task.id} className="p-4 bg-[#1a1333] rounded-lg hover:bg-[#241a47] transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-white mb-1">{task.title}</h4>
+                      <p className="text-xs text-gray-400">{task.type.replace('-', ' ')}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant={getPriorityBadge(task.priority)} size="sm">
+                        {task.priority}
+                      </Badge>
+                      <Badge variant={getStatusBadge(task.status)} size="sm">
+                        {task.status.replace('-', ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Quick Stats */}
+      <Card title="Content & Campaigns Overview">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-[#563EB7] mb-2">{content.filter(c => c.status === 'published').length}</div>
+            <p className="text-gray-400">Published Content</p>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-[#563EB7] mb-2">{content.filter(c => c.status === 'scheduled').length}</div>
+            <p className="text-gray-400">Scheduled Content</p>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-[#563EB7] mb-2">{campaigns.filter(c => c.status === 'running').length}</div>
+            <p className="text-gray-400">Active Campaigns</p>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </Card>
     </div>
   );
 }
