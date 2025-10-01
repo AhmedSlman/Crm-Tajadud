@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useData } from '@/context/DataContext';
-import { Content, UserRole } from '@/types';
+import { Content, UserRole, ColumnName } from '@/types';
 import Button from '@/components/Button';
 import Badge from '@/components/Badge';
 import { Plus, Edit2, Check, X } from 'lucide-react';
@@ -14,29 +14,13 @@ type ContentPlanTableProps = {
   userRole: UserRole;
 };
 
-// Define which roles can edit which columns
-const COLUMN_PERMISSIONS: Record<string, UserRole[]> = {
-  'design-brief': ['admin', 'account-manager', 'social-media'],
-  'inspiration': ['admin', 'account-manager', 'social-media', 'graphic-designer'],
-  'design': ['admin', 'graphic-designer'],
-  'text-content': ['admin', 'account-manager', 'social-media', 'content-writer'],
-  'drive-link': ['admin', 'account-manager', 'graphic-designer', 'video-editor'],
-  'notes': ['admin', 'account-manager', 'social-media'],
-  'status': ['admin', 'account-manager', 'social-media'],
-};
-
-function canEditColumn(column: string, userRole: UserRole): boolean {
-  const allowedRoles = COLUMN_PERMISSIONS[column];
-  return allowedRoles ? allowedRoles.includes(userRole) : false;
-}
-
 export default function ContentPlanTable({ 
   content, 
   projectId, 
   month, 
   userRole 
 }: ContentPlanTableProps) {
-  const { addContent, updateContent, users } = useData();
+  const { addContent, updateContent, users, canUserEdit } = useData();
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
 
@@ -106,7 +90,7 @@ export default function ContentPlanTable({
     field: string; 
     value: string 
   }) => {
-    const canEdit = canEditColumn(field, userRole);
+    const canEdit = canUserEdit(userRole, field as ColumnName);
     const isEditing = editingCell?.id === contentItem.id && editingCell?.field === field;
 
     if (!canEdit) {

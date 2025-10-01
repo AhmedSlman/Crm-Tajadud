@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Client, Project, Task, Campaign, Content, User, Notification } from '@/types';
+import { createContext, useContext, useState, ReactNode } from 'react';
+import { Client, Project, Task, Campaign, Content, User, Notification, RolePermission, UserRole, ColumnName } from '@/types';
 import { 
   users as initialUsers,
   notifications as initialNotifications,
@@ -22,6 +22,7 @@ type DataContextType = {
   notifications: Notification[];
   currentUser: User;
   loading: boolean;
+  permissions: RolePermission[];
   addClient: (client: Omit<Client, 'id' | 'createdAt' | 'linkedProjects'>) => Promise<void>;
   updateClient: (id: string, client: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -39,9 +40,41 @@ type DataContextType = {
   deleteContent: (id: string) => Promise<void>;
   markNotificationAsRead: (id: string) => void;
   refreshData: () => Promise<void>;
+  canUserEdit: (role: UserRole, column: ColumnName) => boolean;
+  updatePermission: (role: UserRole, column: ColumnName, canEdit: boolean) => void;
+  resetPermissions: () => void;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
+
+// Default permissions
+const getDefaultPermissions = (): RolePermission[] => {
+  const roles: UserRole[] = ['admin', 'account-manager', 'graphic-designer', 'social-media', 'content-writer', 'video-editor', 'ads-specialist', 'seo-specialist'];
+  const columns: ColumnName[] = ['design-brief', 'inspiration', 'design', 'text-content', 'drive-link', 'notes', 'status'];
+  
+  const defaultPerms: Record<string, UserRole[]> = {
+    'design-brief': ['admin', 'account-manager', 'social-media'],
+    'inspiration': ['admin', 'account-manager', 'social-media', 'graphic-designer'],
+    'design': ['admin', 'graphic-designer'],
+    'text-content': ['admin', 'account-manager', 'social-media', 'content-writer'],
+    'drive-link': ['admin', 'account-manager', 'graphic-designer', 'video-editor'],
+    'notes': ['admin', 'account-manager', 'social-media'],
+    'status': ['admin', 'account-manager', 'social-media'],
+  };
+
+  const permissions: RolePermission[] = [];
+  roles.forEach(role => {
+    columns.forEach(column => {
+      permissions.push({
+        role,
+        column,
+        canEdit: defaultPerms[column]?.includes(role) || false
+      });
+    });
+  });
+
+  return permissions;
+};
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<Client[]>(initialClients);
@@ -52,7 +85,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [users] = useState<User[]>(initialUsers);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [currentUser] = useState<User>(initialUsers[0]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
+  
+  // Permissions state
+  const [permissions, setPermissions] = useState<RolePermission[]>(() => {
+    const saved = localStorage.getItem('permissions');
+    return saved ? JSON.parse(saved) : getDefaultPermissions();
+  });
 
   // Refresh data from static sources
   const refreshData = async () => {
@@ -167,6 +206,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
+  // Permissions management
+  const canUserEdit = (role: UserRole, column: ColumnName): boolean => {
+    const permission = permissions.find(p => p.role === role && p.column === column);
+    return permission?.canEdit || false;
+  };
+
+  const updatePermission = (role: UserRole, column: ColumnName, canEdit: boolean) => {
+    const updated = permissions.map(p => 
+      p.role === role && p.column === column 
+        ? { ...p, canEdit } 
+        : p
+    );
+    setPermissions(updated);
+    localStorage.setItem('permissions', JSON.stringify(updated));
+  };
+
+  const resetPermissions = () => {
+    const defaultPerms = getDefaultPermissions();
+    setPermissions(defaultPerms);
+    localStorage.setItem('permissions', JSON.stringify(defaultPerms));
+  };
+
   return (
     <DataContext.Provider value={{
       clients,
@@ -178,6 +239,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       notifications,
       currentUser,
       loading,
+      permissions,
       addClient,
       updateClient,
       deleteClient,
@@ -195,6 +257,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteContent,
       markNotificationAsRead,
       refreshData,
+      canUserEdit,
+      updatePermission,
+      resetPermissions,
     }}>
       {children}
     </DataContext.Provider>

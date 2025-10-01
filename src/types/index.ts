@@ -210,3 +210,27 @@ export type RegisterData = {
   role: UserRole;
 };
 
+export type ColumnName = 
+  | 'design-brief'
+  | 'inspiration'
+  | 'design'
+  | 'text-content'
+  | 'drive-link'
+  | 'notes'
+  | 'status';
+
+export type RolePermission = {
+  role: UserRole;
+  column: ColumnName;
+  canEdit: boolean;
+};
+
+export type PermissionsConfig = {
+  id: string;
+  name: string;
+  description: string;
+  permissions: RolePermission[];
+  createdAt: string;
+  updatedAt: string;
+};
+

@@ -13,7 +13,8 @@ import {
   Calendar,
   BarChart3,
   Sparkles,
-  UserCog
+  UserCog,
+  Shield
 } from 'lucide-react';
 
 const navItems = [
@@ -26,6 +27,7 @@ const navItems = [
   { name: 'Social Calendar', href: '/calendar', icon: Calendar, adminOnly: false },
   { name: 'Reports', href: '/reports', icon: BarChart3, adminOnly: false },
   { name: 'Users', href: '/users', icon: UserCog, adminOnly: true },
+  { name: 'Permissions', href: '/permissions', icon: Shield, adminOnly: true },
 ];
 
 export default function Sidebar() {
