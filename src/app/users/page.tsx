@@ -90,6 +90,7 @@ function UsersManagementContent() {
   const getRoleLabel = (role: string) => {
     const roleMap: Record<string, string> = {
       'admin': '👑 Admin',
+      'account-manager': '👔 Account Manager',
       'graphic-designer': '🎨 Graphic Designer',
       'social-media': '📱 Social Media',
       'content-writer': '✍️ Content Writer',

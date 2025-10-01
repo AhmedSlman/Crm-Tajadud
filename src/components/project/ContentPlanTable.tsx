@@ -16,13 +16,13 @@ type ContentPlanTableProps = {
 
 // Define which roles can edit which columns
 const COLUMN_PERMISSIONS: Record<string, UserRole[]> = {
-  'design-brief': ['admin', 'social-media'],
-  'inspiration': ['admin', 'social-media', 'graphic-designer'],
+  'design-brief': ['admin', 'account-manager', 'social-media'],
+  'inspiration': ['admin', 'account-manager', 'social-media', 'graphic-designer'],
   'design': ['admin', 'graphic-designer'],
-  'text-content': ['admin', 'content-writer', 'social-media'],
-  'drive-link': ['admin', 'graphic-designer', 'video-editor'],
-  'notes': ['admin', 'social-media'],
-  'status': ['admin', 'social-media'],
+  'text-content': ['admin', 'account-manager', 'social-media', 'content-writer'],
+  'drive-link': ['admin', 'account-manager', 'graphic-designer', 'video-editor'],
+  'notes': ['admin', 'account-manager', 'social-media'],
+  'status': ['admin', 'account-manager', 'social-media'],
 };
 
 function canEditColumn(column: string, userRole: UserRole): boolean {

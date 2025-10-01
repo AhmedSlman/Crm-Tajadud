@@ -88,6 +88,19 @@ export const users: User[] = [
     approvedBy: 'Admin User',
     approvedAt: '2024-05-06'
   },
+  { 
+    id: '8', 
+    name: 'Karim Mostafa', 
+    email: 'karim@crm.com', 
+    role: 'account-manager',
+    status: 'active',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Karim',
+    phone: '+20 107 890 1234',
+    department: 'Client Services',
+    joinedAt: '2024-03-15',
+    approvedBy: 'Admin User',
+    approvedAt: '2024-03-16'
+  },
 ];
 
 export const clients: Client[] = [

@@ -59,6 +59,7 @@ export default function RegisterPage() {
 
   const roleOptions = [
     { value: '', label: 'Select your role' },
+    { value: 'account-manager', label: '👔 Account Manager' },
     { value: 'graphic-designer', label: '🎨 Graphic Designer' },
     { value: 'social-media', label: '📱 Social Media Specialist' },
     { value: 'content-writer', label: '✍️ Content Writer' },

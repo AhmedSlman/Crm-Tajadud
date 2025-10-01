@@ -162,6 +162,7 @@ export type Notification = {
 
 export type UserRole = 
   | 'admin' 
+  | 'account-manager'
   | 'graphic-designer' 
   | 'social-media' 
   | 'content-writer' 
