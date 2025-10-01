@@ -29,7 +29,7 @@ export default function ProtectedRoute({
       }
 
       // Account pending approval
-      if (isPending && !user) {
+      if (user && isPending) {
         router.push('/auth/pending');
         return;
       }

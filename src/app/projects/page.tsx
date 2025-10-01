@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, Calendar, User, Download, FolderKanban, TrendingU
 import { Project } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function ProjectsPage() {
   const { projects, clients, users, addProject, updateProject, deleteProject } = useData();
@@ -63,28 +64,47 @@ export default function ProjectsPage() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = () => {
-    if (editingProject) {
-      updateProject(editingProject.id, formData);
-    } else {
-      const newProject: Project = {
-        id: Date.now().toString(),
-        ...formData,
-        createdBy: '1',
-        linkedTasks: [],
-        linkedCampaigns: [],
-        linkedContent: [],
-        files: [],
-        createdAt: new Date().toISOString(),
-      };
-      addProject(newProject);
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.clientId) {
+      toast.error('Please fill all required fields');
+      return;
     }
-    setIsModalOpen(false);
+
+    try {
+      if (editingProject) {
+        await updateProject(editingProject.id, formData);
+        toast.success(`${formData.name} updated successfully! ✅`);
+      } else {
+        const newProject: Project = {
+          id: Date.now().toString(),
+          ...formData,
+          createdBy: '1',
+          linkedTasks: [],
+          linkedCampaigns: [],
+          linkedContent: [],
+          files: [],
+          createdAt: new Date().toISOString(),
+        };
+        await addProject(newProject);
+        toast.success(`${formData.name} created successfully! 🎉`);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error('Failed to save project', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    }
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this project?')) {
-      deleteProject(id);
+    const project = projects.find(p => p.id === id);
+    if (confirm(`Are you sure you want to delete ${project?.name}?`)) {
+      try {
+        deleteProject(id);
+        toast.success(`${project?.name} deleted successfully! 🗑️`);
+      } catch (error) {
+        toast.error('Failed to delete project');
+      }
     }
   };
 
@@ -126,6 +146,9 @@ export default function ProjectsPage() {
       };
     });
     exportToCSV(exportData, 'projects');
+    toast.success(`Exported ${exportData.length} projects! 📊`, {
+      description: 'File downloaded successfully',
+    });
   };
 
   return (

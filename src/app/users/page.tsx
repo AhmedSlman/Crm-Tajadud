@@ -12,6 +12,7 @@ import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
 import { CheckCircle, XCircle, UserCog, Ban, Users as UsersIcon, Mail, Phone } from 'lucide-react';
 import { User, UserStatus } from '@/types';
+import { toast } from 'sonner';
 
 export default function UsersManagementPage() {
   return (
@@ -22,7 +23,7 @@ export default function UsersManagementPage() {
 }
 
 function UsersManagementContent() {
-  const { users } = useData();
+  const { users, approveUser, rejectUser, suspendUser, activateUser } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | UserStatus>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -50,32 +51,64 @@ function UsersManagementContent() {
   const activeUsers = users.filter(u => u.status === 'active');
   const suspendedUsers = users.filter(u => u.status === 'suspended');
 
-  const handleApprove = (userId: string) => {
-    // TODO: API call to approve user
-    console.log('Approving user:', userId);
-    alert('User approved successfully!');
-  };
-
-  const handleReject = (userId: string) => {
-    if (confirm('Are you sure you want to reject this user?')) {
-      // TODO: API call to reject/delete user
-      console.log('Rejecting user:', userId);
-      alert('User rejected successfully!');
+  const handleApprove = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    try {
+      await approveUser(userId);
+      toast.success(`${user?.name} has been approved! ✅`, {
+        description: 'User can now log in to the system',
+      });
+    } catch (error) {
+      toast.error('Failed to approve user', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
     }
   };
 
-  const handleSuspend = (userId: string) => {
-    if (confirm('Are you sure you want to suspend this user?')) {
-      // TODO: API call to suspend user
-      console.log('Suspending user:', userId);
-      alert('User suspended successfully!');
+  const handleReject = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (confirm(`Are you sure you want to reject and delete ${user?.name}?`)) {
+      try {
+        await rejectUser(userId);
+        toast.success(`${user?.name} has been rejected and removed! ❌`, {
+          description: 'User account has been deleted',
+        });
+      } catch (error) {
+        toast.error('Failed to reject user', {
+          description: error instanceof Error ? error.message : 'Please try again',
+        });
+      }
     }
   };
 
-  const handleActivate = (userId: string) => {
-    // TODO: API call to activate user
-    console.log('Activating user:', userId);
-    alert('User activated successfully!');
+  const handleSuspend = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (confirm(`Are you sure you want to suspend ${user?.name}?`)) {
+      try {
+        await suspendUser(userId);
+        toast.warning(`${user?.name} has been suspended! 🚫`, {
+          description: 'User cannot log in until reactivated',
+        });
+      } catch (error) {
+        toast.error('Failed to suspend user', {
+          description: error instanceof Error ? error.message : 'Please try again',
+        });
+      }
+    }
+  };
+
+  const handleActivate = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    try {
+      await activateUser(userId);
+      toast.success(`${user?.name} has been activated! ✅`, {
+        description: 'User can now log in to the system',
+      });
+    } catch (error) {
+      toast.error('Failed to activate user', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    }
   };
 
   const getStatusBadge = (status: UserStatus) => {

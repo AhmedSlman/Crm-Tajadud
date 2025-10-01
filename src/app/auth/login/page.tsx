@@ -177,6 +177,32 @@ export default function LoginPage() {
                       <p className="text-sm text-white font-medium">Social Media</p>
                       <p className="text-xs text-gray-400">sara@crm.com / 123456</p>
                     </div>
+                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin('karim@crm.com', '123456')}
+                  className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white font-medium">Account Manager</p>
+                      <p className="text-xs text-gray-400">karim@crm.com / 123456</p>
+                    </div>
+                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin('omar@crm.com', '123456')}
+                  className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white font-medium">Content Writer</p>
+                      <p className="text-xs text-gray-400">omar@crm.com / 123456</p>
+                    </div>
                     <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Pending</span>
                   </div>
                 </button>

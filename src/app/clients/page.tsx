@@ -12,6 +12,7 @@ import EmptyState from '@/components/EmptyState';
 import { Plus, Pencil, Trash2, Mail, Phone, Building, Download, Users as UsersIcon } from 'lucide-react';
 import { Client } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ClientsPage() {
   const { clients, addClient, updateClient, deleteClient, projects } = useData();
@@ -52,24 +53,43 @@ export default function ClientsPage() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = () => {
-    if (editingClient) {
-      updateClient(editingClient.id, formData);
-    } else {
-      const newClient: Client = {
-        id: Date.now().toString(),
-        ...formData,
-        linkedProjects: [],
-        createdAt: new Date().toISOString(),
-      };
-      addClient(newClient);
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.email) {
+      toast.error('Please fill all required fields');
+      return;
     }
-    setIsModalOpen(false);
+
+    try {
+      if (editingClient) {
+        await updateClient(editingClient.id, formData);
+        toast.success(`${formData.name} updated successfully! ✅`);
+      } else {
+        const newClient: Client = {
+          id: Date.now().toString(),
+          ...formData,
+          linkedProjects: [],
+          createdAt: new Date().toISOString(),
+        };
+        await addClient(newClient);
+        toast.success(`${formData.name} added successfully! 🎉`);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error('Failed to save client', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    }
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this client?')) {
-      deleteClient(id);
+    const client = clients.find(c => c.id === id);
+    if (confirm(`Are you sure you want to delete ${client?.name}?`)) {
+      try {
+        deleteClient(id);
+        toast.success(`${client?.name} deleted successfully! 🗑️`);
+      } catch (error) {
+        toast.error('Failed to delete client');
+      }
     }
   };
 
@@ -94,6 +114,9 @@ export default function ClientsPage() {
       'Created At': client.createdAt,
     }));
     exportToCSV(exportData, 'clients');
+    toast.success(`Exported ${exportData.length} clients! 📊`, {
+      description: 'File downloaded successfully',
+    });
   };
 
   return (

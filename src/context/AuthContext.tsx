@@ -132,8 +132,8 @@ export function useAuth() {
 async function mockLogin(credentials: LoginCredentials): Promise<AuthUser> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      // Mock users
-      const users = [
+      // Mock users - simulating backend authentication
+      const mockUsers = [
         {
           id: '1',
           name: 'Admin User',
@@ -160,13 +160,53 @@ async function mockLogin(credentials: LoginCredentials): Promise<AuthUser> {
           email: 'sara@crm.com',
           password: '123456',
           role: 'social-media' as UserRole,
-          status: 'pending' as const,
+          status: 'active' as const,
           avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sara',
           token: 'mock-social-token',
         },
+        {
+          id: '4',
+          name: 'Omar Ali',
+          email: 'omar@crm.com',
+          password: '123456',
+          role: 'content-writer' as UserRole,
+          status: 'pending' as const,
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Omar',
+          token: 'mock-writer-token',
+        },
+        {
+          id: '6',
+          name: 'Youssef Khaled',
+          email: 'youssef@crm.com',
+          password: '123456',
+          role: 'ads-specialist' as UserRole,
+          status: 'active' as const,
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Youssef',
+          token: 'mock-ads-token',
+        },
+        {
+          id: '7',
+          name: 'Heba Samir',
+          email: 'heba@crm.com',
+          password: '123456',
+          role: 'seo-specialist' as UserRole,
+          status: 'suspended' as const,
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Heba',
+          token: 'mock-seo-token',
+        },
+        {
+          id: '8',
+          name: 'Karim Mostafa',
+          email: 'karim@crm.com',
+          password: '123456',
+          role: 'account-manager' as UserRole,
+          status: 'active' as const,
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Karim',
+          token: 'mock-manager-token',
+        },
       ];
 
-      const user = users.find(
+      const user = mockUsers.find(
         (u) => u.email === credentials.email && u.password === credentials.password
       );
 

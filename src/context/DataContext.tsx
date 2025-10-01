@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Client, Project, Task, Campaign, Content, User, Notification, RolePermission, UserRole, ColumnName } from '@/types';
 import { 
   users as initialUsers,
@@ -43,6 +43,11 @@ type DataContextType = {
   canUserEdit: (role: UserRole, column: ColumnName) => boolean;
   updatePermission: (role: UserRole, column: ColumnName, canEdit: boolean) => void;
   resetPermissions: () => void;
+  approveUser: (userId: string) => Promise<void>;
+  rejectUser: (userId: string) => Promise<void>;
+  suspendUser: (userId: string) => Promise<void>;
+  activateUser: (userId: string) => Promise<void>;
+  updateUser: (id: string, user: Partial<User>) => Promise<void>;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -77,21 +82,117 @@ const getDefaultPermissions = (): RolePermission[] => {
 };
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
-  const [content, setContent] = useState<Content[]>(initialContent);
-  const [users] = useState<User[]>(initialUsers);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  // Initialize from localStorage or use defaults
+  const [clients, setClients] = useState<Client[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('clients');
+      return saved ? JSON.parse(saved) : initialClients;
+    }
+    return initialClients;
+  });
+
+  const [projects, setProjects] = useState<Project[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('projects');
+      return saved ? JSON.parse(saved) : initialProjects;
+    }
+    return initialProjects;
+  });
+
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('tasks');
+      return saved ? JSON.parse(saved) : initialTasks;
+    }
+    return initialTasks;
+  });
+
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('campaigns');
+      return saved ? JSON.parse(saved) : initialCampaigns;
+    }
+    return initialCampaigns;
+  });
+
+  const [content, setContent] = useState<Content[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('content');
+      return saved ? JSON.parse(saved) : initialContent;
+    }
+    return initialContent;
+  });
+
+  const [users, setUsers] = useState<User[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('users');
+      return saved ? JSON.parse(saved) : initialUsers;
+    }
+    return initialUsers;
+  });
+
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('notifications');
+      return saved ? JSON.parse(saved) : initialNotifications;
+    }
+    return initialNotifications;
+  });
+
   const [currentUser] = useState<User>(initialUsers[0]);
   const [loading] = useState(false);
   
   // Permissions state
   const [permissions, setPermissions] = useState<RolePermission[]>(() => {
-    const saved = localStorage.getItem('permissions');
-    return saved ? JSON.parse(saved) : getDefaultPermissions();
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('permissions');
+      return saved ? JSON.parse(saved) : getDefaultPermissions();
+    }
+    return getDefaultPermissions();
   });
+
+  // Auto-save to localStorage whenever data changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('clients', JSON.stringify(clients));
+    }
+  }, [clients]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('projects', JSON.stringify(projects));
+    }
+  }, [projects]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+  }, [tasks]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('campaigns', JSON.stringify(campaigns));
+    }
+  }, [campaigns]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('content', JSON.stringify(content));
+    }
+  }, [content]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+  }, [users]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+    }
+  }, [notifications]);
 
   // Refresh data from static sources
   const refreshData = async () => {
@@ -228,6 +329,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('permissions', JSON.stringify(defaultPerms));
   };
 
+  // User management functions
+  const updateUser = async (id: string, updatedUser: Partial<User>) => {
+    setUsers(users.map(u => u.id === id ? { ...u, ...updatedUser } : u));
+  };
+
+  const approveUser = async (userId: string) => {
+    // TODO: Replace with API call
+    const approvedUser = users.find(u => u.id === userId);
+    if (approvedUser) {
+      await updateUser(userId, {
+        status: 'active',
+        approvedBy: currentUser.name,
+        approvedAt: new Date().toISOString()
+      });
+    }
+  };
+
+  const rejectUser = async (userId: string) => {
+    // TODO: Replace with API call
+    setUsers(users.filter(u => u.id !== userId));
+  };
+
+  const suspendUser = async (userId: string) => {
+    // TODO: Replace with API call
+    await updateUser(userId, { status: 'suspended' });
+  };
+
+  const activateUser = async (userId: string) => {
+    // TODO: Replace with API call
+    await updateUser(userId, { status: 'active' });
+  };
+
   return (
     <DataContext.Provider value={{
       clients,
@@ -260,6 +393,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       canUserEdit,
       updatePermission,
       resetPermissions,
+      approveUser,
+      rejectUser,
+      suspendUser,
+      activateUser,
+      updateUser,
     }}>
       {children}
     </DataContext.Provider>

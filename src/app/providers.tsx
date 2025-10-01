@@ -7,6 +7,7 @@ import { DataProvider } from '@/context/DataContext';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import QuickActions from '@/components/QuickActions';
+import { Toaster } from 'sonner';
 
 export function Providers({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +16,12 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <DataProvider>
+        <Toaster 
+          position="top-right" 
+          richColors 
+          closeButton
+          theme="dark"
+        />
         {isAuthPage ? (
           // Auth pages - no sidebar/topbar
           <>{children}</>

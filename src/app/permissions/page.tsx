@@ -7,6 +7,7 @@ import Card from '@/components/Card';
 import Button from '@/components/Button';
 import { Shield, RotateCcw, Save, CheckCircle, XCircle } from 'lucide-react';
 import { UserRole, ColumnName } from '@/types';
+import { toast } from 'sonner';
 
 export default function PermissionsPage() {
   return (
@@ -48,21 +49,41 @@ function PermissionsContent() {
 
   const togglePermission = (role: UserRole, column: ColumnName) => {
     const currentValue = canEdit(role, column);
-    updatePermission(role, column, !currentValue);
+    const newValue = !currentValue;
+    updatePermission(role, column, newValue);
     setHasChanges(true);
+    
+    // Show toast notification
+    const roleLabel = roles.find(r => r.value === role)?.label;
+    const columnLabel = columns.find(c => c.value === column)?.label;
+    
+    if (newValue) {
+      toast.success(`Permission granted! ✅`, {
+        description: `${roleLabel} can now edit ${columnLabel}`,
+      });
+    } else {
+      toast.info(`Permission revoked`, {
+        description: `${roleLabel} cannot edit ${columnLabel} anymore`,
+      });
+    }
   };
 
   const handleReset = () => {
     if (confirm('Are you sure you want to reset all permissions to default?')) {
       resetPermissions();
       setHasChanges(false);
+      toast.success('Permissions reset to default! 🔄', {
+        description: 'All roles now have default permissions',
+      });
     }
   };
 
   const handleSave = () => {
     // Permissions are already saved in localStorage via updatePermission
     setHasChanges(false);
-    alert('Permissions saved successfully!');
+    toast.success('Permissions saved successfully! 💾', {
+      description: 'Changes have been applied',
+    });
   };
 
   return (

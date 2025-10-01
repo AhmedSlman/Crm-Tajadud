@@ -6,6 +6,7 @@ import { Content, UserRole, ColumnName } from '@/types';
 import Button from '@/components/Button';
 import Badge from '@/components/Badge';
 import { Plus, Edit2, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 type ContentPlanTableProps = {
   content: Content[];
@@ -29,16 +30,23 @@ export default function ContentPlanTable({
     setEditValue(currentValue || '');
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (!editingCell) return;
 
-    const updates: Partial<Content> = {
-      [editingCell.field]: editValue,
-    };
+    try {
+      const updates: Partial<Content> = {
+        [editingCell.field]: editValue,
+      };
 
-    updateContent(editingCell.id, updates);
-    setEditingCell(null);
-    setEditValue('');
+      await updateContent(editingCell.id, updates);
+      setEditingCell(null);
+      setEditValue('');
+      toast.success('Content updated! ✅', {
+        description: `${editingCell.field.replace('-', ' ')} has been saved`,
+      });
+    } catch (error) {
+      toast.error('Failed to update content');
+    }
   };
 
   const handleEditCancel = () => {
@@ -46,26 +54,41 @@ export default function ContentPlanTable({
     setEditValue('');
   };
 
-  const handleAddContent = () => {
-    addContent({
-      title: 'New Content Item',
-      contentType: 'post',
-      status: 'idea',
-      projectId,
-      assignedTo: users[0]?.id || '',
-      createdBy: '1',
-      startDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date().toISOString().split('T')[0],
-      priority: 'medium',
-      progress: 0,
-      month,
-      isReel: false,
-      readyForCalendar: false,
-    });
+  const handleAddContent = async () => {
+    try {
+      await addContent({
+        title: 'New Content Item',
+        contentType: 'post',
+        status: 'idea',
+        projectId,
+        assignedTo: users[0]?.id || '',
+        createdBy: '1',
+        startDate: new Date().toISOString().split('T')[0],
+        dueDate: new Date().toISOString().split('T')[0],
+        priority: 'medium',
+        progress: 0,
+        month,
+        isReel: false,
+        readyForCalendar: false,
+      });
+      toast.success('Content item added! 🎉', {
+        description: 'You can now fill in the details',
+      });
+    } catch (error) {
+      toast.error('Failed to add content');
+    }
   };
 
-  const handleMarkReady = (contentId: string) => {
-    updateContent(contentId, { readyForCalendar: true, status: 'approved' });
+  const handleMarkReady = async (contentId: string) => {
+    try {
+      const item = content.find(c => c.id === contentId);
+      await updateContent(contentId, { readyForCalendar: true, status: 'approved' });
+      toast.success(`${item?.title} is ready for calendar! 📅`, {
+        description: 'You can now drag it to the social calendar',
+      });
+    } catch (error) {
+      toast.error('Failed to mark content as ready');
+    }
   };
 
   const getStatusBadge = (status: string) => {

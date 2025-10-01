@@ -8,6 +8,7 @@ import Modal from '@/components/Modal';
 import Input, { Textarea } from '@/components/Input';
 import Select from '@/components/Select';
 import { Plus, User, Calendar, GripVertical } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   DndContext,
   DragEndEvent,
@@ -17,6 +18,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -44,6 +46,48 @@ const columns: Column[] = [
   { id: 'review', title: 'Review', color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
   { id: 'done', title: 'Done', color: 'text-green-400', bgColor: 'bg-green-500/10' },
 ];
+
+function DroppableColumn({ 
+  column, 
+  tasks 
+}: { 
+  column: Column; 
+  tasks: Task[] 
+}) {
+  const { setNodeRef } = useDroppable({
+    id: column.id,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="bg-gradient-to-br from-[#14102a] to-[#0c081e] border border-[#563EB7]/20 rounded-xl p-4 min-h-[500px]"
+    >
+      {/* Column Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${column.bgColor.replace('/10', '')}`} />
+          <h3 className={`font-semibold ${column.color}`}>{column.title}</h3>
+        </div>
+        <span className={`text-sm font-bold px-2 py-0.5 rounded ${column.bgColor} ${column.color}`}>
+          {tasks.length}
+        </span>
+      </div>
+
+      {/* Tasks */}
+      <SortableContext
+        items={tasks.map(t => t.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-3">
+          {tasks.map(task => (
+            <TaskCard key={task.id} task={task} />
+          ))}
+        </div>
+      </SortableContext>
+    </div>
+  );
+}
 
 function TaskCard({ task }: { task: Task }) {
   const { users } = useData();
@@ -118,7 +162,7 @@ function TaskCard({ task }: { task: Task }) {
   );
 }
 
-export default function TasksKanban({ tasks, projectId }: TasksKanbanProps) {
+export default function TasksKanban({ tasks: allTasks, projectId, month }: TasksKanbanProps) {
   const { users, addTask, updateTask } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -130,6 +174,14 @@ export default function TasksKanban({ tasks, projectId }: TasksKanbanProps) {
     assignedTo: users[0]?.id || '',
     dueDate: '',
   });
+
+  // Filter tasks by month (optional filtering - show all if no month filter needed)
+  const tasks = month 
+    ? allTasks.filter(t => {
+        const taskMonth = t.dueDate?.substring(0, 7);
+        return taskMonth === month;
+      })
+    : allTasks;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -143,49 +195,81 @@ export default function TasksKanban({ tasks, projectId }: TasksKanbanProps) {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+
+    setActiveId(null);
 
     if (!over) return;
 
     const taskId = active.id as string;
     const newStatus = over.id as TaskStatus;
+    const task = allTasks.find(t => t.id === taskId);
+
+    // Skip if dropped in same column
+    if (task?.status === newStatus) return;
 
     // Update task status
-    updateTask(taskId, { status: newStatus });
-
-    setActiveId(null);
+    try {
+      await updateTask(taskId, { status: newStatus });
+      
+      const statusLabels: Record<TaskStatus, string> = {
+        'to-do': 'To Do',
+        'in-progress': 'In Progress',
+        'review': 'Review',
+        'done': 'Done',
+        'delayed': 'Delayed',
+      };
+      
+      toast.success(`Task moved! ✅`, {
+        description: `${task?.title} → ${statusLabels[newStatus]}`,
+      });
+    } catch (error) {
+      toast.error('Failed to update task status');
+    }
   };
 
-  const handleAddTask = () => {
-    if (!formData.title || !formData.dueDate) return;
+  const handleAddTask = async () => {
+    if (!formData.title || !formData.dueDate) {
+      toast.error('Please fill task title and due date');
+      return;
+    }
 
-    addTask({
-      title: formData.title,
-      description: formData.description,
-      type: formData.type,
-      status: 'to-do',
-      priority: formData.priority,
-      assignedTo: formData.assignedTo,
-      createdBy: '1',
-      startDate: new Date().toISOString().split('T')[0],
-      dueDate: formData.dueDate,
-      progress: 0,
-      projectId,
-    });
+    try {
+      await addTask({
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        status: 'to-do',
+        priority: formData.priority,
+        assignedTo: formData.assignedTo,
+        createdBy: '1',
+        startDate: new Date().toISOString().split('T')[0],
+        dueDate: formData.dueDate,
+        progress: 0,
+        projectId,
+      });
 
-    setIsModalOpen(false);
-    setFormData({
-      title: '',
-      description: '',
-      type: 'general',
-      priority: 'medium',
-      assignedTo: users[0]?.id || '',
-      dueDate: '',
-    });
+      const assignee = users.find(u => u.id === formData.assignedTo);
+      toast.success(`Task created! 🎉`, {
+        description: `Assigned to ${assignee?.name}`,
+      });
+
+      setIsModalOpen(false);
+      setFormData({
+        title: '',
+        description: '',
+        type: 'general',
+        priority: 'medium',
+        assignedTo: users[0]?.id || '',
+        dueDate: '',
+      });
+    } catch (error) {
+      toast.error('Failed to create task');
+    }
   };
 
-  const activeTask = tasks.find(t => t.id === activeId);
+  const activeTask = allTasks.find(t => t.id === activeId);
 
   return (
     <div>
@@ -208,34 +292,12 @@ export default function TasksKanban({ tasks, projectId }: TasksKanbanProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {columns.map(column => {
             const columnTasks = tasks.filter(t => t.status === column.id);
-
             return (
-              <SortableContext
-                key={column.id}
-                id={column.id}
-                items={columnTasks.map(t => t.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="bg-gradient-to-br from-[#14102a] to-[#0c081e] border border-[#563EB7]/20 rounded-xl p-4 min-h-[500px]">
-                  {/* Column Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${column.bgColor.replace('/10', '')}`} />
-                      <h3 className={`font-semibold ${column.color}`}>{column.title}</h3>
-                    </div>
-                    <span className={`text-sm font-bold px-2 py-0.5 rounded ${column.bgColor} ${column.color}`}>
-                      {columnTasks.length}
-                    </span>
-                  </div>
-
-                  {/* Tasks */}
-                  <div>
-                    {columnTasks.map(task => (
-                      <TaskCard key={task.id} task={task} />
-                    ))}
-                  </div>
-                </div>
-              </SortableContext>
+              <DroppableColumn 
+                key={column.id} 
+                column={column} 
+                tasks={columnTasks} 
+              />
             );
           })}
         </div>

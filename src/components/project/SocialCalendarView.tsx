@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import { Content } from '@/types';
 import { FileText, Video, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 type SocialCalendarViewProps = {
   month: Date;
@@ -65,21 +66,37 @@ export default function SocialCalendarView({ month, projectId }: SocialCalendarV
     e.preventDefault();
   };
 
-  const handleDrop = (date: Date) => {
+  const handleDrop = async (date: Date) => {
     if (!draggedItem) return;
 
     const dateStr = date.toISOString().split('T')[0];
     
-    updateContent(draggedItem.id, {
-      publishDate: dateStr,
-      status: 'scheduled',
-    });
+    try {
+      await updateContent(draggedItem.id, {
+        publishDate: dateStr,
+        status: 'scheduled',
+      });
+
+      toast.success(`${draggedItem.title} scheduled! 📅`, {
+        description: `Will be published on ${new Date(dateStr).toLocaleDateString()}`,
+      });
+    } catch (error) {
+      toast.error('Failed to schedule content');
+    }
 
     setDraggedItem(null);
   };
 
-  const handleMarkPublished = (contentId: string) => {
-    updateContent(contentId, { status: 'published' });
+  const handleMarkPublished = async (contentId: string) => {
+    const item = content.find(c => c.id === contentId);
+    try {
+      await updateContent(contentId, { status: 'published' });
+      toast.success(`${item?.title} published! 🎉`, {
+        description: 'Content is now live',
+      });
+    } catch (error) {
+      toast.error('Failed to publish content');
+    }
   };
 
   return (

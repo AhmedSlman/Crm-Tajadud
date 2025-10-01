@@ -145,7 +145,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
       <div className="min-h-[600px]">
         {activeTab === 'tasks' && (
           <TasksKanban 
-            tasks={monthTasks} 
+            tasks={projectTasks} 
             projectId={projectId}
             month={monthKey}
           />
