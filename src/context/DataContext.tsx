@@ -4,7 +4,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { Client, Project, Task, Campaign, Content, User, Notification } from '@/types';
 import { 
   users as initialUsers,
-  notifications as initialNotifications
+  notifications as initialNotifications,
+  clients as initialClients,
+  projects as initialProjects,
+  tasks as initialTasks,
+  campaigns as initialCampaigns,
+  content as initialContent
 } from '@/lib/dummy-data';
 
 type DataContextType = {
@@ -39,263 +44,123 @@ type DataContextType = {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [content, setContent] = useState<Content[]>([]);
+  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
+  const [content, setContent] = useState<Content[]>(initialContent);
   const [users] = useState<User[]>(initialUsers);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [currentUser] = useState<User>(initialUsers[0]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch all data on mount
+  // Refresh data from static sources
   const refreshData = async () => {
-    try {
-      setLoading(true);
-      const [clientsData, projectsData, tasksData, campaignsData, contentData] = await Promise.all([
-        fetch('/api/clients').then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch('/api/projects').then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch('/api/tasks').then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch('/api/campaigns').then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch('/api/content').then(r => r.ok ? r.json() : []).catch(() => []),
-      ]);
-
-      setClients(clientsData);
-      setProjects(projectsData);
-      setTasks(tasksData);
-      setCampaigns(campaignsData);
-      setContent(contentData);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Data is already loaded from static sources
+    console.log('Data refreshed from static sources');
   };
-
-  useEffect(() => {
-    refreshData();
-  }, []);
 
   // Clients CRUD
   const addClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'linkedProjects'>) => {
-    try {
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(clientData),
-      });
-      const newClient = await response.json();
-      setClients([...clients, { ...newClient, linkedProjects: [] }]);
-    } catch (error) {
-      console.error('Error adding client:', error);
-    }
+    const newClient: Client = {
+      ...clientData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0],
+      linkedProjects: []
+    };
+    setClients([...clients, newClient]);
   };
 
   const updateClient = async (id: string, updatedClient: Partial<Client>) => {
-    try {
-      const response = await fetch(`/api/clients/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedClient),
-      });
-      const updated = await response.json();
-      setClients(clients.map(c => c.id === id ? { ...c, ...updated } : c));
-    } catch (error) {
-      console.error('Error updating client:', error);
-    }
+    setClients(clients.map(c => c.id === id ? { ...c, ...updatedClient } : c));
   };
 
   const deleteClient = async (id: string) => {
-    try {
-      await fetch(`/api/clients/${id}`, { method: 'DELETE' });
-      setClients(clients.filter(c => c.id !== id));
-    } catch (error) {
-      console.error('Error deleting client:', error);
-    }
+    setClients(clients.filter(c => c.id !== id));
   };
 
   // Projects CRUD
   const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'linkedTasks' | 'linkedCampaigns' | 'linkedContent' | 'files'>) => {
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...projectData,
-          projectManagerId: projectData.projectManager,
-          createdById: currentUser.id,
-        }),
-      });
-      const newProject = await response.json();
-      setProjects([...projects, { 
-        ...newProject, 
-        linkedTasks: [], 
-        linkedCampaigns: [], 
-        linkedContent: [], 
-        files: [] 
-      }]);
-    } catch (error) {
-      console.error('Error adding project:', error);
-    }
+    const newProject: Project = {
+      ...projectData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0],
+      linkedTasks: [],
+      linkedCampaigns: [],
+      linkedContent: [],
+      files: []
+    };
+    setProjects([...projects, newProject]);
   };
 
   const updateProject = async (id: string, updatedProject: Partial<Project>) => {
-    try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProject),
-      });
-      const updated = await response.json();
-      setProjects(projects.map(p => p.id === id ? { ...p, ...updated } : p));
-    } catch (error) {
-      console.error('Error updating project:', error);
-    }
+    setProjects(projects.map(p => p.id === id ? { ...p, ...updatedProject } : p));
   };
 
   const deleteProject = async (id: string) => {
-    try {
-      await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-      setProjects(projects.filter(p => p.id !== id));
-    } catch (error) {
-      console.error('Error deleting project:', error);
-    }
+    setProjects(projects.filter(p => p.id !== id));
   };
 
   // Tasks CRUD
   const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'subtasks' | 'attachments' | 'comments' | 'changeLog'>) => {
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...taskData,
-          assignedToId: taskData.assignedTo,
-          createdById: currentUser.id,
-        }),
-      });
-      const newTask = await response.json();
-      setTasks([...tasks, { 
-        ...newTask, 
-        subtasks: [], 
-        attachments: [], 
-        comments: [], 
-        changeLog: [] 
-      }]);
-    } catch (error) {
-      console.error('Error adding task:', error);
-    }
+    const newTask: Task = {
+      ...taskData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0],
+      subtasks: [],
+      attachments: [],
+      comments: [],
+      changeLog: []
+    };
+    setTasks([...tasks, newTask]);
   };
 
   const updateTask = async (id: string, updatedTask: Partial<Task>) => {
-    try {
-      const response = await fetch(`/api/tasks/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...updatedTask,
-          changedById: currentUser.id,
-        }),
-      });
-      const updated = await response.json();
-      setTasks(tasks.map(t => t.id === id ? { ...t, ...updated } : t));
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
+    setTasks(tasks.map(t => t.id === id ? { ...t, ...updatedTask } : t));
   };
 
   const deleteTask = async (id: string) => {
-    try {
-      await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      setTasks(tasks.filter(t => t.id !== id));
-    } catch (error) {
-      console.error('Error deleting task:', error);
-    }
+    setTasks(tasks.filter(t => t.id !== id));
   };
 
   // Campaigns CRUD
   const addCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'kpis' | 'attachments'>) => {
-    try {
-      const response = await fetch('/api/campaigns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...campaignData,
-          responsiblePersonId: campaignData.responsiblePerson,
-          createdById: currentUser.id,
-        }),
-      });
-      const newCampaign = await response.json();
-      setCampaigns([...campaigns, { ...newCampaign, kpis: [], attachments: [] }]);
-    } catch (error) {
-      console.error('Error adding campaign:', error);
-    }
+    const newCampaign: Campaign = {
+      ...campaignData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0],
+      kpis: [],
+      attachments: []
+    };
+    setCampaigns([...campaigns, newCampaign]);
   };
 
   const updateCampaign = async (id: string, updatedCampaign: Partial<Campaign>) => {
-    try {
-      const response = await fetch(`/api/campaigns/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedCampaign),
-      });
-      const updated = await response.json();
-      setCampaigns(campaigns.map(c => c.id === id ? { ...c, ...updated } : c));
-    } catch (error) {
-      console.error('Error updating campaign:', error);
-    }
+    setCampaigns(campaigns.map(c => c.id === id ? { ...c, ...updatedCampaign } : c));
   };
 
   const deleteCampaign = async (id: string) => {
-    try {
-      await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
-      setCampaigns(campaigns.filter(c => c.id !== id));
-    } catch (error) {
-      console.error('Error deleting campaign:', error);
-    }
+    setCampaigns(campaigns.filter(c => c.id !== id));
   };
 
   // Content CRUD
   const addContent = async (contentData: Omit<Content, 'id' | 'createdAt' | 'attachments' | 'comments'>) => {
-    try {
-      const response = await fetch('/api/content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...contentData,
-          assignedToId: contentData.assignedTo,
-          createdById: currentUser.id,
-        }),
-      });
-      const newContent = await response.json();
-      setContent([...content, { ...newContent, attachments: [], comments: [] }]);
-    } catch (error) {
-      console.error('Error adding content:', error);
-    }
+    const newContent: Content = {
+      ...contentData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0],
+      attachments: [],
+      comments: []
+    };
+    setContent([...content, newContent]);
   };
 
   const updateContent = async (id: string, updatedContent: Partial<Content>) => {
-    try {
-      const response = await fetch(`/api/content/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedContent),
-      });
-      const updated = await response.json();
-      setContent(content.map(c => c.id === id ? { ...c, ...updated } : c));
-    } catch (error) {
-      console.error('Error updating content:', error);
-    }
+    setContent(content.map(c => c.id === id ? { ...c, ...updatedContent } : c));
   };
 
   const deleteContent = async (id: string) => {
-    try {
-      await fetch(`/api/content/${id}`, { method: 'DELETE' });
-      setContent(content.filter(c => c.id !== id));
-    } catch (error) {
-      console.error('Error deleting content:', error);
-    }
+    setContent(content.filter(c => c.id !== id));
   };
 
   const markNotificationAsRead = (id: string) => {

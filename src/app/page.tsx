@@ -1,6 +1,7 @@
 'use client';
 
 import { useData } from '@/context/DataContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Card from '@/components/Card';
 import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
@@ -8,6 +9,14 @@ import { Users, FolderKanban, CheckSquare, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Dashboard() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
+  );
+}
+
+function DashboardContent() {
   const { clients, projects, tasks, campaigns, content } = useData();
 
   const stats = [

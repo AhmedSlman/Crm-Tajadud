@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, 
   Users, 
@@ -11,22 +12,31 @@ import {
   FileText, 
   Calendar,
   BarChart3,
-  Sparkles
+  Sparkles,
+  UserCog
 } from 'lucide-react';
 
 const navItems = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Clients', href: '/clients', icon: Users },
-  { name: 'Projects', href: '/projects', icon: FolderKanban },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
-  { name: 'Content Plan', href: '/content', icon: FileText },
-  { name: 'Social Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, adminOnly: false },
+  { name: 'Clients', href: '/clients', icon: Users, adminOnly: false },
+  { name: 'Projects', href: '/projects', icon: FolderKanban, adminOnly: false },
+  { name: 'Tasks', href: '/tasks', icon: CheckSquare, adminOnly: false },
+  { name: 'Campaigns', href: '/campaigns', icon: Megaphone, adminOnly: false },
+  { name: 'Content Plan', href: '/content', icon: FileText, adminOnly: false },
+  { name: 'Social Calendar', href: '/calendar', icon: Calendar, adminOnly: false },
+  { name: 'Reports', href: '/reports', icon: BarChart3, adminOnly: false },
+  { name: 'Users', href: '/users', icon: UserCog, adminOnly: true },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { isAdmin } = useAuth();
+
+  // Filter nav items based on user role
+  const filteredNavItems = navItems.filter(item => {
+    if (item.adminOnly && !isAdmin) return false;
+    return true;
+  });
 
   return (
     <div className="w-64 bg-gradient-to-b from-[#14102a] to-[#0c081e] h-screen fixed left-0 top-0 flex flex-col border-r border-[#563EB7]/30 shadow-2xl shadow-black/50">
@@ -49,7 +59,7 @@ export default function Sidebar() {
       
       <nav className="relative z-10 flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
-          {navItems.map((item, index) => {
+          {filteredNavItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             

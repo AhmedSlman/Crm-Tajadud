@@ -1,11 +1,93 @@
 import { Client, Project, Task, Campaign, Content, User, Notification } from '@/types';
 
 export const users: User[] = [
-  { id: '1', name: 'John Doe', email: 'john@agency.com', role: 'admin', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John' },
-  { id: '2', name: 'Sarah Smith', email: 'sarah@agency.com', role: 'project-manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-  { id: '3', name: 'Mike Johnson', email: 'mike@agency.com', role: 'team-member', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike' },
-  { id: '4', name: 'Emily Davis', email: 'emily@agency.com', role: 'team-member', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily' },
-  { id: '5', name: 'David Wilson', email: 'david@client.com', role: 'client', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
+  { 
+    id: '1', 
+    name: 'Admin User', 
+    email: 'admin@crm.com', 
+    role: 'admin',
+    status: 'active',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin',
+    phone: '+20 100 123 4567',
+    department: 'Management',
+    joinedAt: '2024-01-01',
+    approvedBy: 'System',
+    approvedAt: '2024-01-01'
+  },
+  { 
+    id: '2', 
+    name: 'Ahmed Hassan', 
+    email: 'ahmed@crm.com', 
+    role: 'graphic-designer',
+    status: 'active',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ahmed',
+    phone: '+20 101 234 5678',
+    department: 'Design',
+    joinedAt: '2024-06-15',
+    approvedBy: 'Admin User',
+    approvedAt: '2024-06-16'
+  },
+  { 
+    id: '3', 
+    name: 'Sara Mohamed', 
+    email: 'sara@crm.com', 
+    role: 'social-media',
+    status: 'active',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sara',
+    phone: '+20 102 345 6789',
+    department: 'Marketing',
+    joinedAt: '2024-08-20',
+    approvedBy: 'Admin User',
+    approvedAt: '2024-08-21'
+  },
+  { 
+    id: '4', 
+    name: 'Omar Ali', 
+    email: 'omar@crm.com', 
+    role: 'content-writer',
+    status: 'pending',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Omar',
+    phone: '+20 103 456 7890',
+    department: 'Content',
+    joinedAt: '2025-09-28'
+  },
+  { 
+    id: '5', 
+    name: 'Mona Ibrahim', 
+    email: 'mona@crm.com', 
+    role: 'video-editor',
+    status: 'pending',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mona',
+    phone: '+20 104 567 8901',
+    department: 'Production',
+    joinedAt: '2025-09-29'
+  },
+  { 
+    id: '6', 
+    name: 'Youssef Khaled', 
+    email: 'youssef@crm.com', 
+    role: 'ads-specialist',
+    status: 'active',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Youssef',
+    phone: '+20 105 678 9012',
+    department: 'Advertising',
+    joinedAt: '2024-07-10',
+    approvedBy: 'Admin User',
+    approvedAt: '2024-07-11'
+  },
+  { 
+    id: '7', 
+    name: 'Heba Samir', 
+    email: 'heba@crm.com', 
+    role: 'seo-specialist',
+    status: 'suspended',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Heba',
+    phone: '+20 106 789 0123',
+    department: 'SEO',
+    joinedAt: '2024-05-05',
+    approvedBy: 'Admin User',
+    approvedAt: '2024-05-06'
+  },
 ];
 
 export const clients: Client[] = [

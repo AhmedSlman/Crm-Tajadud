@@ -1,14 +1,30 @@
 'use client';
 
-import { Bell, Search, Settings, User } from 'lucide-react';
+import { Bell, Search, Settings, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
 import { useData } from '@/context/DataContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Topbar() {
-  const { notifications, currentUser, markNotificationAsRead } = useData();
+  const { notifications, markNotificationAsRead } = useData();
+  const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const getRoleLabel = (role: string) => {
+    const roleMap: Record<string, string> = {
+      'admin': 'Admin',
+      'graphic-designer': 'Graphic Designer',
+      'social-media': 'Social Media',
+      'content-writer': 'Content Writer',
+      'video-editor': 'Video Editor',
+      'ads-specialist': 'Ads Specialist',
+      'seo-specialist': 'SEO Specialist',
+    };
+    return roleMap[role] || role;
+  };
 
   return (
     <div className="h-16 bg-gradient-to-r from-[#14102a] via-[#1a1333] to-[#14102a] border-b border-[#563EB7]/30 fixed top-0 right-0 left-64 z-10 flex items-center justify-between px-6 backdrop-blur-xl shadow-lg shadow-black/20">
@@ -80,22 +96,73 @@ export default function Topbar() {
           <Settings size={20} />
         </button>
 
-        <div className="flex items-center gap-3 pl-4 border-l border-[#563EB7]/30">
-          <div className="text-right">
-            <p className="text-sm font-semibold text-white">{currentUser.name}</p>
-            <p className="text-xs text-gray-400 capitalize font-medium">{currentUser.role.replace('-', ' ')}</p>
-          </div>
-          <div className="relative group cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center overflow-hidden shadow-lg shadow-[#563EB7]/50 group-hover:shadow-[#563EB7]/80 transition-all duration-300 group-hover:scale-110">
-              {currentUser.avatar ? (
-                <Image src={currentUser.avatar} alt={currentUser.name} width={40} height={40} className="rounded-full" />
-              ) : (
-                <User size={20} className="text-white" />
+        {user && (
+          <div className="relative flex items-center gap-3 pl-4 border-l border-[#563EB7]/30">
+            <div className="text-right">
+              <p className="text-sm font-semibold text-white">{user.name}</p>
+              <p className="text-xs text-gray-400 font-medium">{getRoleLabel(user.role)}</p>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="relative group cursor-pointer"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center overflow-hidden shadow-lg shadow-[#563EB7]/50 group-hover:shadow-[#563EB7]/80 transition-all duration-300 group-hover:scale-110">
+                  {user.avatar ? (
+                    <Image src={user.avatar} alt={user.name} width={40} height={40} className="rounded-full" />
+                  ) : (
+                    <User size={20} className="text-white" />
+                  )}
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full opacity-0 group-hover:opacity-30 blur-md transition-opacity duration-300" />
+              </button>
+
+              {/* User Menu Dropdown */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-[#1a1333] to-[#14102a] border border-[#563EB7]/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-scaleIn backdrop-blur-xl z-50">
+                  <div className="p-4 border-b border-[#563EB7]/20">
+                    <p className="font-semibold text-white">{user.name}</p>
+                    <p className="text-xs text-gray-400 mt-1">{user.email}</p>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        // TODO: Navigate to profile
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#563EB7]/20 transition-colors text-left"
+                    >
+                      <User size={16} className="text-gray-400" />
+                      <span className="text-white text-sm">My Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        // TODO: Navigate to settings
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#563EB7]/20 transition-colors text-left"
+                    >
+                      <Settings size={16} className="text-gray-400" />
+                      <span className="text-white text-sm">Settings</span>
+                    </button>
+                  </div>
+                  <div className="p-2 border-t border-[#563EB7]/20">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-colors text-left"
+                    >
+                      <LogOut size={16} className="text-red-400" />
+                      <span className="text-red-400 text-sm font-medium">Sign Out</span>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="absolute -inset-1 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full opacity-0 group-hover:opacity-30 blur-md transition-opacity duration-300" />
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

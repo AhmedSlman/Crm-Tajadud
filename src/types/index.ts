@@ -150,11 +150,52 @@ export type Notification = {
   createdAt: string;
 };
 
+export type UserRole = 
+  | 'admin' 
+  | 'graphic-designer' 
+  | 'social-media' 
+  | 'content-writer' 
+  | 'video-editor' 
+  | 'ads-specialist'
+  | 'seo-specialist';
+
+export type UserStatus = 'pending' | 'active' | 'suspended';
+
 export type User = {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'project-manager' | 'team-member' | 'client';
+  password?: string; // Only for backend, never exposed to frontend
+  role: UserRole;
+  status: UserStatus;
   avatar?: string;
+  phone?: string;
+  department?: string;
+  joinedAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
+};
+
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  avatar?: string;
+  token?: string;
+};
+
+export type LoginCredentials = {
+  email: string;
+  password: string;
+};
+
+export type RegisterData = {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+  role: UserRole;
 };
 
