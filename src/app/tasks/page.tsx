@@ -18,7 +18,7 @@ import { Task } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
 
 export default function TasksPage() {
-  const { tasks, projects, users, addTask, updateTask, deleteTask } = useData();
+  const { tasks, projects, users, addTask, updateTask, deleteTask, currentUser } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -80,7 +80,7 @@ export default function TasksPage() {
       const newTask: Task = {
         id: Date.now().toString(),
         ...formData,
-        createdBy: '1',
+        createdBy: currentUser?.id || '1',
         attachments: [],
         comments: [],
         subtasks: [],

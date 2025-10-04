@@ -3,10 +3,12 @@
 import { Bell, Search, Settings, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Topbar() {
+  const router = useRouter();
   const { notifications, markNotificationAsRead } = useData();
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -129,7 +131,7 @@ export default function Topbar() {
                     <button
                       onClick={() => {
                         setShowUserMenu(false);
-                        // TODO: Navigate to profile
+                        router.push('/profile');
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#563EB7]/20 transition-colors text-left"
                     >
@@ -139,7 +141,7 @@ export default function Topbar() {
                     <button
                       onClick={() => {
                         setShowUserMenu(false);
-                        // TODO: Navigate to settings
+                        router.push('/profile');
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#563EB7]/20 transition-colors text-left"
                     >
