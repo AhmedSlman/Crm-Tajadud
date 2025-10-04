@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import Select from '@/components/Select';
@@ -11,6 +12,7 @@ import { UserRole } from '@/types';
 
 export default function RegisterPage() {
   const { register, loading } = useAuth();
+  const { getAllRoles } = useData();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -57,15 +59,15 @@ export default function RegisterPage() {
     }
   };
 
+  const allRoles = getAllRoles();
   const roleOptions = [
     { value: '', label: 'Select your role' },
-    { value: 'account-manager', label: '👔 Account Manager' },
-    { value: 'graphic-designer', label: '🎨 Graphic Designer' },
-    { value: 'social-media', label: '📱 Social Media Specialist' },
-    { value: 'content-writer', label: '✍️ Content Writer' },
-    { value: 'video-editor', label: '🎬 Video Editor' },
-    { value: 'ads-specialist', label: '📢 Ads Specialist' },
-    { value: 'seo-specialist', label: '🔍 SEO Specialist' },
+    ...allRoles
+      .filter(role => role.value !== 'admin') // Don't allow registration as admin
+      .map(role => ({
+        value: role.value,
+        label: `${role.emoji} ${role.label}`,
+      })),
   ];
 
   return (

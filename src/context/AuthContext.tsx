@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthUser, LoginCredentials, RegisterData, UserRole } from '@/types';
+import { authAPI } from '@/lib/api';
 
 type AuthContextType = {
   user: AuthUser | null;
@@ -33,8 +34,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem('token');
       
       if (savedUser && token) {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
+        // التحقق من صحة التوكن مع الخادم
+        const validation = await authAPI.validateToken();
+        
+        if (validation.valid && validation.user) {
+          setUser(validation.user as AuthUser);
+          // تحديث البيانات المحلية
+          localStorage.setItem('user', JSON.stringify(validation.user));
+        } else {
+          // التوكن غير صالح، مسح البيانات
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -49,22 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
-      // TODO: Replace with actual API call
-      // For now, using mock data
-      const response = await mockLogin(credentials);
+      // استخدام API الحقيقي
+      const response = await authAPI.login(credentials);
       
-      if (response.status === 'pending') {
-        throw new Error('Your account is pending approval from admin');
-      }
-      
-      if (response.status === 'suspended') {
-        throw new Error('Your account has been suspended');
-      }
-
-      localStorage.setItem('user', JSON.stringify(response));
-      localStorage.setItem('token', response.token || 'mock-token');
       setUser(response);
-      
       router.push('/');
     } catch (error) {
       setLoading(false);
@@ -78,8 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
-      // TODO: Replace with actual API call
-      const response = await mockRegister(data);
+      // استخدام API الحقيقي
+      await authAPI.register(data);
       
       // Don't auto-login after registration, show pending message
       router.push('/auth/pending');
@@ -91,11 +90,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    setUser(null);
-    router.push('/auth/login');
+  const logout = async () => {
+    try {
+      // إشعار الخادم بتسجيل الخروج
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // مسح البيانات المحلية في جميع الأحوال
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      setUser(null);
+      router.push('/auth/login');
+    }
   };
 
   const isAuthenticated = !!user;
@@ -128,111 +135,4 @@ export function useAuth() {
   return context;
 }
 
-// Mock functions - Replace with actual API calls
-async function mockLogin(credentials: LoginCredentials): Promise<AuthUser> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // Mock users - simulating backend authentication
-      const mockUsers = [
-        {
-          id: '1',
-          name: 'Admin User',
-          email: 'admin@crm.com',
-          password: 'admin123',
-          role: 'admin' as UserRole,
-          status: 'active' as const,
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin',
-          token: 'mock-admin-token',
-        },
-        {
-          id: '2',
-          name: 'Ahmed Hassan',
-          email: 'ahmed@crm.com',
-          password: '123456',
-          role: 'graphic-designer' as UserRole,
-          status: 'active' as const,
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ahmed',
-          token: 'mock-designer-token',
-        },
-        {
-          id: '3',
-          name: 'Sara Mohamed',
-          email: 'sara@crm.com',
-          password: '123456',
-          role: 'social-media' as UserRole,
-          status: 'active' as const,
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sara',
-          token: 'mock-social-token',
-        },
-        {
-          id: '4',
-          name: 'Omar Ali',
-          email: 'omar@crm.com',
-          password: '123456',
-          role: 'content-writer' as UserRole,
-          status: 'pending' as const,
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Omar',
-          token: 'mock-writer-token',
-        },
-        {
-          id: '6',
-          name: 'Youssef Khaled',
-          email: 'youssef@crm.com',
-          password: '123456',
-          role: 'ads-specialist' as UserRole,
-          status: 'active' as const,
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Youssef',
-          token: 'mock-ads-token',
-        },
-        {
-          id: '7',
-          name: 'Heba Samir',
-          email: 'heba@crm.com',
-          password: '123456',
-          role: 'seo-specialist' as UserRole,
-          status: 'suspended' as const,
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Heba',
-          token: 'mock-seo-token',
-        },
-        {
-          id: '8',
-          name: 'Karim Mostafa',
-          email: 'karim@crm.com',
-          password: '123456',
-          role: 'account-manager' as UserRole,
-          status: 'active' as const,
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Karim',
-          token: 'mock-manager-token',
-        },
-      ];
-
-      const user = mockUsers.find(
-        (u) => u.email === credentials.email && u.password === credentials.password
-      );
-
-      if (!user) {
-        reject(new Error('Invalid email or password'));
-        return;
-      }
-
-      const { password, ...userWithoutPassword } = user;
-      resolve(userWithoutPassword);
-    }, 1000);
-  });
-}
-
-async function mockRegister(data: RegisterData): Promise<void> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // Check if email already exists
-      if (data.email === 'admin@crm.com' || data.email === 'ahmed@crm.com') {
-        reject(new Error('Email already exists'));
-        return;
-      }
-
-      // Simulate successful registration
-      resolve();
-    }, 1000);
-  });
-}
 

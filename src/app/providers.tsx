@@ -12,6 +12,7 @@ import { Toaster } from 'sonner';
 export function Providers({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/auth');
+  const isClientPage = pathname?.startsWith('/client-');
 
   return (
     <AuthProvider>
@@ -22,11 +23,11 @@ export function Providers({ children }: { children: ReactNode }) {
           closeButton
           theme="dark"
         />
-        {isAuthPage ? (
-          // Auth pages - no sidebar/topbar
+        {isAuthPage || isClientPage ? (
+          // Auth pages and Client pages - no admin sidebar/topbar
           <>{children}</>
         ) : (
-          // Main app - with sidebar/topbar
+          // Main admin app - with sidebar/topbar
           <div className="relative min-h-screen">
             <Sidebar />
             <Topbar />

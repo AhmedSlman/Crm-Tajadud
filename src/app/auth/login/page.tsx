@@ -225,6 +225,16 @@ export default function LoginPage() {
                 Create New Account
               </Button>
             </Link>
+            
+            {/* Client Portal Link */}
+            <div className="mt-4 text-center">
+              <Link 
+                href="/client-login" 
+                className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Client? Access your portal here →
+              </Link>
+            </div>
           </form>
         </div>
 

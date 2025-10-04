@@ -5,7 +5,9 @@ import { useData } from '@/context/DataContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
-import { Shield, RotateCcw, Save, CheckCircle, XCircle } from 'lucide-react';
+import Modal from '@/components/Modal';
+import Input from '@/components/Input';
+import { Shield, RotateCcw, Save, CheckCircle, XCircle, Plus, Trash2, Edit } from 'lucide-react';
 import { UserRole, ColumnName } from '@/types';
 import { toast } from 'sonner';
 
@@ -18,19 +20,27 @@ export default function PermissionsPage() {
 }
 
 function PermissionsContent() {
-  const { permissions, updatePermission, resetPermissions } = useData();
+  const { 
+    permissions, 
+    updatePermission, 
+    resetPermissions, 
+    getAllRoles,
+    addCustomRole,
+    updateCustomRole,
+    deleteCustomRole 
+  } = useData();
   const [hasChanges, setHasChanges] = useState(false);
+  const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
+  const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<{ value: string; label: string; emoji: string } | null>(null);
+  const [deleteConfirmRole, setDeleteConfirmRole] = useState<string | null>(null);
+  const [roleFormData, setRoleFormData] = useState({
+    name: '',
+    label: '',
+    emoji: '👤',
+  });
 
-  const roles: { value: UserRole; label: string; emoji: string }[] = [
-    { value: 'admin', label: 'Admin', emoji: '👑' },
-    { value: 'account-manager', label: 'Account Manager', emoji: '👔' },
-    { value: 'graphic-designer', label: 'Graphic Designer', emoji: '🎨' },
-    { value: 'social-media', label: 'Social Media', emoji: '📱' },
-    { value: 'content-writer', label: 'Content Writer', emoji: '✍️' },
-    { value: 'video-editor', label: 'Video Editor', emoji: '🎬' },
-    { value: 'ads-specialist', label: 'Ads Specialist', emoji: '📢' },
-    { value: 'seo-specialist', label: 'SEO Specialist', emoji: '🔍' },
-  ];
+  const roles = getAllRoles();
 
   const columns: { value: ColumnName; label: string }[] = [
     { value: 'design-brief', label: 'Design Brief' },
@@ -86,6 +96,94 @@ function PermissionsContent() {
     });
   };
 
+  const handleAddRole = async () => {
+    if (!roleFormData.name || !roleFormData.label) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    // Check if role name already exists
+    if (roles.some(r => r.value === roleFormData.name)) {
+      toast.error('Role name already exists');
+      return;
+    }
+
+    try {
+      await addCustomRole({
+        name: roleFormData.name,
+        label: roleFormData.label,
+        emoji: roleFormData.emoji,
+        isCustom: true,
+        createdBy: 'admin', // Current user
+      });
+
+      toast.success(`${roleFormData.label} role created! 🎉`, {
+        description: 'You can now assign permissions to this role',
+      });
+
+      setIsAddRoleModalOpen(false);
+      setRoleFormData({ name: '', label: '', emoji: '👤' });
+    } catch (error) {
+      toast.error('Failed to create role');
+    }
+  };
+
+  const handleEditRole = (role: { value: string; label: string; emoji: string }) => {
+    setEditingRole(role);
+    setRoleFormData({
+      name: role.value,
+      label: role.label,
+      emoji: role.emoji,
+    });
+    setIsEditRoleModalOpen(true);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!editingRole || !roleFormData.label) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    try {
+      // Find the custom role by name
+      const roleToUpdate = roles.find(r => r.value === editingRole.value && r.isCustom);
+      if (!roleToUpdate) {
+        toast.error('Cannot edit default roles');
+        return;
+      }
+
+      await updateCustomRole(roleToUpdate.value, {
+        label: roleFormData.label,
+        emoji: roleFormData.emoji,
+      });
+
+      toast.success(`${roleFormData.label} updated! ✅`);
+      setIsEditRoleModalOpen(false);
+      setEditingRole(null);
+      setRoleFormData({ name: '', label: '', emoji: '👤' });
+    } catch (error) {
+      toast.error('Failed to update role');
+    }
+  };
+
+  const handleDeleteRole = async (roleName: string) => {
+    const role = roles.find(r => r.value === roleName);
+    if (!role?.isCustom) {
+      toast.error('Cannot delete default roles');
+      return;
+    }
+
+    try {
+      await deleteCustomRole(roleName);
+      toast.success(`${role.label} deleted! 🗑️`, {
+        description: 'Role and its permissions have been removed',
+      });
+      setDeleteConfirmRole(null);
+    } catch (error) {
+      toast.error('Failed to delete role');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -97,6 +195,10 @@ function PermissionsContent() {
           <p className="text-gray-400 text-lg">Configure role-based access control for Content Plan</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={() => setIsAddRoleModalOpen(true)}>
+            <Plus size={20} className="mr-2" />
+            Add Role
+          </Button>
           <Button variant="secondary" onClick={handleReset}>
             <RotateCcw size={20} className="mr-2" />
             Reset to Default
@@ -149,9 +251,49 @@ function PermissionsContent() {
                   }`}
                 >
                   <td className="px-4 py-4 sticky left-0 bg-[#14102a] z-10">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{role.emoji}</span>
-                      <span className="text-white font-medium">{role.label}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{role.emoji}</span>
+                        <span className="text-white font-medium">{role.label}</span>
+                        {role.isCustom && (
+                          <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">Custom</span>
+                        )}
+                      </div>
+                      {role.isCustom && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEditRole(role)}
+                            className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-all"
+                            title="Edit Role"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          {deleteConfirmRole === role.value ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDeleteRole(role.value)}
+                                className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmRole(null)}
+                                className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirmRole(role.value)}
+                              className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-all"
+                              title="Delete Role"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </td>
                   {columns.map(col => {
@@ -238,6 +380,151 @@ function PermissionsContent() {
           </div>
         </Card>
       </div>
+
+      {/* Add Role Modal */}
+      <Modal
+        isOpen={isAddRoleModalOpen}
+        onClose={() => {
+          setIsAddRoleModalOpen(false);
+          setRoleFormData({ name: '', label: '', emoji: '👤' });
+        }}
+        title="Add New Role"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Role Name (ID) *
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g., project-manager"
+              value={roleFormData.name}
+              onChange={(e) => setRoleFormData({ ...roleFormData, name: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              This will be used as the unique identifier (lowercase, no spaces)
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Display Label *
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g., Project Manager"
+              value={roleFormData.label}
+              onChange={(e) => setRoleFormData({ ...roleFormData, label: e.target.value })}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Emoji
+            </label>
+            <Input
+              type="text"
+              placeholder="👤"
+              value={roleFormData.emoji}
+              onChange={(e) => setRoleFormData({ ...roleFormData, emoji: e.target.value })}
+              className="w-full"
+              maxLength={2}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsAddRoleModalOpen(false);
+                setRoleFormData({ name: '', label: '', emoji: '👤' });
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddRole} className="flex-1">
+              <Plus size={16} className="mr-2" />
+              Add Role
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Role Modal */}
+      <Modal
+        isOpen={isEditRoleModalOpen}
+        onClose={() => {
+          setIsEditRoleModalOpen(false);
+          setEditingRole(null);
+          setRoleFormData({ name: '', label: '', emoji: '👤' });
+        }}
+        title="Edit Role"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Role Name (ID)
+            </label>
+            <Input
+              type="text"
+              value={roleFormData.name}
+              disabled
+              className="w-full opacity-50"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Role ID cannot be changed
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Display Label *
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g., Project Manager"
+              value={roleFormData.label}
+              onChange={(e) => setRoleFormData({ ...roleFormData, label: e.target.value })}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Emoji
+            </label>
+            <Input
+              type="text"
+              placeholder="👤"
+              value={roleFormData.emoji}
+              onChange={(e) => setRoleFormData({ ...roleFormData, emoji: e.target.value })}
+              className="w-full"
+              maxLength={2}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsEditRoleModalOpen(false);
+                setEditingRole(null);
+                setRoleFormData({ name: '', label: '', emoji: '👤' });
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateRole} className="flex-1">
+              <Edit size={16} className="mr-2" />
+              Update Role
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,16 +1,10 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Client, Project, Task, Campaign, Content, User, Notification, RolePermission, UserRole, ColumnName } from '@/types';
-import { 
-  users as initialUsers,
-  notifications as initialNotifications,
-  clients as initialClients,
-  projects as initialProjects,
-  tasks as initialTasks,
-  campaigns as initialCampaigns,
-  content as initialContent
-} from '@/lib/dummy-data';
+import { Client, Project, Task, Campaign, Content, User, Notification, RolePermission, UserRole, ColumnName, CustomRole } from '@/types';
+import { useAuth } from './AuthContext';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 type DataContextType = {
   clients: Client[];
@@ -23,6 +17,7 @@ type DataContextType = {
   currentUser: User;
   loading: boolean;
   permissions: RolePermission[];
+  customRoles: CustomRole[];
   addClient: (client: Omit<Client, 'id' | 'createdAt' | 'linkedProjects'>) => Promise<void>;
   updateClient: (id: string, client: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -48,6 +43,10 @@ type DataContextType = {
   suspendUser: (userId: string) => Promise<void>;
   activateUser: (userId: string) => Promise<void>;
   updateUser: (id: string, user: Partial<User>) => Promise<void>;
+  addCustomRole: (role: Omit<CustomRole, 'id' | 'createdAt'>) => Promise<void>;
+  updateCustomRole: (id: string, role: Partial<CustomRole>) => Promise<void>;
+  deleteCustomRole: (id: string) => Promise<void>;
+  getAllRoles: () => { value: string; label: string; emoji: string; isCustom: boolean }[];
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -82,65 +81,18 @@ const getDefaultPermissions = (): RolePermission[] => {
 };
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  // Initialize from localStorage or use defaults
-  const [clients, setClients] = useState<Client[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('clients');
-      return saved ? JSON.parse(saved) : initialClients;
-    }
-    return initialClients;
-  });
-
-  const [projects, setProjects] = useState<Project[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('projects');
-      return saved ? JSON.parse(saved) : initialProjects;
-    }
-    return initialProjects;
-  });
-
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('tasks');
-      return saved ? JSON.parse(saved) : initialTasks;
-    }
-    return initialTasks;
-  });
-
-  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('campaigns');
-      return saved ? JSON.parse(saved) : initialCampaigns;
-    }
-    return initialCampaigns;
-  });
-
-  const [content, setContent] = useState<Content[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('content');
-      return saved ? JSON.parse(saved) : initialContent;
-    }
-    return initialContent;
-  });
-
-  const [users, setUsers] = useState<User[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('users');
-      return saved ? JSON.parse(saved) : initialUsers;
-    }
-    return initialUsers;
-  });
-
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('notifications');
-      return saved ? JSON.parse(saved) : initialNotifications;
-    }
-    return initialNotifications;
-  });
-
-  const [currentUser] = useState<User>(initialUsers[0]);
-  const [loading] = useState(false);
+  const { user: authUser, isAuthenticated } = useAuth();
+  
+  // State management
+  const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [content, setContent] = useState<Content[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
   
   // Permissions state
   const [permissions, setPermissions] = useState<RolePermission[]>(() => {
@@ -151,156 +103,403 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return getDefaultPermissions();
   });
 
-  // Auto-save to localStorage whenever data changes
-  useEffect(() => {
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('clients', JSON.stringify(clients));
+      const saved = localStorage.getItem('customRoles');
+      return saved ? JSON.parse(saved) : [];
     }
-  }, [clients]);
+    return [];
+  });
+
+  // Load data when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshData();
+      loadPermissions();
+    }
+  }, [isAuthenticated]);
+
+  // Load permissions from API
+  const loadPermissions = async () => {
+    try {
+      const permsData = await api.permissions.getAll();
+      if (permsData && permsData.length > 0) {
+        setPermissions(permsData);
+      }
+    } catch (error) {
+      console.error('Error loading permissions:', error);
+      // استخدام الصلاحيات الافتراضية في حالة الخطأ
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('projects', JSON.stringify(projects));
+      localStorage.setItem('customRoles', JSON.stringify(customRoles));
     }
-  }, [projects]);
+  }, [customRoles]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-    }
-  }, [tasks]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('campaigns', JSON.stringify(campaigns));
-    }
-  }, [campaigns]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('content', JSON.stringify(content));
-    }
-  }, [content]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('users', JSON.stringify(users));
-    }
-  }, [users]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('notifications', JSON.stringify(notifications));
-    }
-  }, [notifications]);
-
-  // Refresh data from static sources
+  // Refresh data from API
   const refreshData = async () => {
-    // Data is already loaded from static sources
-    console.log('Data refreshed from static sources');
+    if (!isAuthenticated) return;
+    
+    try {
+      setLoading(true);
+      
+      // جلب جميع البيانات من الخادم بشكل متوازي
+      const [
+        clientsData,
+        projectsData,
+        tasksData,
+        campaignsData,
+        contentsData,
+        usersData,
+      ] = await Promise.all([
+        api.clients.getAll().catch(() => []),
+        api.projects.getAll().catch(() => []),
+        api.tasks.getAll().catch(() => []),
+        api.campaigns.getAll().catch(() => []),
+        api.contents.getAll().catch(() => []),
+        api.users.getAll().catch(() => []),
+      ]);
+
+      setClients(clientsData);
+      setProjects(projectsData);
+      setTasks(tasksData);
+      setCampaigns(campaignsData);
+      setContent(contentsData);
+      setUsers(usersData);
+      
+      // تحديث currentUser من authUser
+      if (authUser) {
+        setCurrentUser(authUser as any);
+      }
+      
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast.error('فشل في تحميل البيانات');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Clients CRUD
   const addClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'linkedProjects'>) => {
-    const newClient: Client = {
-      ...clientData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
-      linkedProjects: []
-    };
-    setClients([...clients, newClient]);
+    try {
+      const newClient = await api.clients.create({
+        name: clientData.name,
+        contact_person: clientData.contactPerson,
+        phone: clientData.phone,
+        email: clientData.email,
+        company: clientData.company,
+        notes: clientData.notes || '',
+        status: 'active'
+      });
+      
+      setClients([...clients, newClient]);
+      toast.success('تم إضافة العميل بنجاح');
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding client:', error);
+      toast.error('فشل في إضافة العميل');
+      throw error;
+    }
   };
 
   const updateClient = async (id: string, updatedClient: Partial<Client>) => {
-    setClients(clients.map(c => c.id === id ? { ...c, ...updatedClient } : c));
+    try {
+      const updated = await api.clients.update(id, {
+        name: updatedClient.name,
+        contact_person: updatedClient.contactPerson,
+        phone: updatedClient.phone,
+        email: updatedClient.email,
+        company: updatedClient.company,
+        notes: updatedClient.notes
+      });
+      
+      setClients(clients.map(c => c.id === id ? { ...c, ...updated } : c));
+      toast.success('تم تحديث العميل بنجاح');
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast.error('فشل في تحديث العميل');
+      throw error;
+    }
   };
 
   const deleteClient = async (id: string) => {
-    setClients(clients.filter(c => c.id !== id));
+    try {
+      await api.clients.delete(id);
+      setClients(clients.filter(c => c.id !== id));
+      toast.success('تم حذف العميل بنجاح');
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast.error('فشل في حذف العميل');
+      throw error;
+    }
   };
 
   // Projects CRUD
   const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'linkedTasks' | 'linkedCampaigns' | 'linkedContent' | 'files'>) => {
-    const newProject: Project = {
-      ...projectData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
-      linkedTasks: [],
-      linkedCampaigns: [],
-      linkedContent: [],
-      files: []
-    };
-    setProjects([...projects, newProject]);
+    try {
+      const newProject = await api.projects.create({
+        name: projectData.name,
+        description: projectData.description,
+        client_id: parseInt(projectData.clientId),
+        start_date: projectData.startDate,
+        end_date: projectData.endDate,
+        status: projectData.status,
+        project_manager_id: parseInt(projectData.projectManager),
+        progress: projectData.progress || 0
+      });
+      
+      setProjects([...projects, newProject]);
+      toast.success('تم إضافة المشروع بنجاح');
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding project:', error);
+      toast.error('فشل في إضافة المشروع');
+      throw error;
+    }
   };
 
   const updateProject = async (id: string, updatedProject: Partial<Project>) => {
-    setProjects(projects.map(p => p.id === id ? { ...p, ...updatedProject } : p));
+    try {
+      const updated = await api.projects.update(id, {
+        name: updatedProject.name,
+        description: updatedProject.description,
+        client_id: updatedProject.clientId ? parseInt(updatedProject.clientId) : undefined,
+        start_date: updatedProject.startDate,
+        end_date: updatedProject.endDate,
+        status: updatedProject.status,
+        project_manager_id: updatedProject.projectManager ? parseInt(updatedProject.projectManager) : undefined,
+        progress: updatedProject.progress
+      });
+      
+      setProjects(projects.map(p => p.id === id ? { ...p, ...updated } : p));
+      toast.success('تم تحديث المشروع بنجاح');
+    } catch (error) {
+      console.error('Error updating project:', error);
+      toast.error('فشل في تحديث المشروع');
+      throw error;
+    }
   };
 
   const deleteProject = async (id: string) => {
-    setProjects(projects.filter(p => p.id !== id));
+    try {
+      await api.projects.delete(id);
+      setProjects(projects.filter(p => p.id !== id));
+      toast.success('تم حذف المشروع بنجاح');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('فشل في حذف المشروع');
+      throw error;
+    }
   };
 
   // Tasks CRUD
   const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'subtasks' | 'attachments' | 'comments' | 'changeLog'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
-      subtasks: [],
-      attachments: [],
-      comments: [],
-      changeLog: []
-    };
-    setTasks([...tasks, newTask]);
+    try {
+      const newTask = await api.tasks.create({
+        title: taskData.title,
+        description: taskData.description,
+        type: taskData.type,
+        status: taskData.status,
+        priority: taskData.priority,
+        assigned_to: parseInt(taskData.assignedTo),
+        start_date: taskData.startDate,
+        due_date: taskData.dueDate,
+        project_id: taskData.projectId ? parseInt(taskData.projectId) : undefined,
+        progress: taskData.progress || 0
+      });
+      
+      setTasks([...tasks, newTask]);
+      toast.success('تم إضافة المهمة بنجاح');
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding task:', error);
+      toast.error('فشل في إضافة المهمة');
+      throw error;
+    }
   };
 
   const updateTask = async (id: string, updatedTask: Partial<Task>) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, ...updatedTask } : t));
+    try {
+      const updated = await api.tasks.update(id, {
+        title: updatedTask.title,
+        description: updatedTask.description,
+        type: updatedTask.type,
+        status: updatedTask.status,
+        priority: updatedTask.priority,
+        assigned_to: updatedTask.assignedTo ? parseInt(updatedTask.assignedTo) : undefined,
+        start_date: updatedTask.startDate,
+        due_date: updatedTask.dueDate,
+        completion_date: updatedTask.completionDate,
+        project_id: updatedTask.projectId ? parseInt(updatedTask.projectId) : undefined,
+        progress: updatedTask.progress
+      });
+      
+      setTasks(tasks.map(t => t.id === id ? { ...t, ...updated } : t));
+      toast.success('تم تحديث المهمة بنجاح');
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast.error('فشل في تحديث المهمة');
+      throw error;
+    }
   };
 
   const deleteTask = async (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id));
+    try {
+      await api.tasks.delete(id);
+      setTasks(tasks.filter(t => t.id !== id));
+      toast.success('تم حذف المهمة بنجاح');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast.error('فشل في حذف المهمة');
+      throw error;
+    }
   };
 
   // Campaigns CRUD
   const addCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'kpis' | 'attachments'>) => {
-    const newCampaign: Campaign = {
-      ...campaignData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
-      kpis: [],
-      attachments: []
-    };
-    setCampaigns([...campaigns, newCampaign]);
+    try {
+      const newCampaign = await api.campaigns.create({
+        name: campaignData.name,
+        project_id: parseInt(campaignData.projectId),
+        type: campaignData.type,
+        objective: campaignData.objective,
+        start_date: campaignData.startDate,
+        end_date: campaignData.endDate,
+        budget: campaignData.budget,
+        status: campaignData.status,
+        responsible_person_id: parseInt(campaignData.responsiblePerson),
+        progress: campaignData.progress || 0
+      });
+      
+      setCampaigns([...campaigns, newCampaign]);
+      toast.success('تم إضافة الحملة بنجاح');
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding campaign:', error);
+      toast.error('فشل في إضافة الحملة');
+      throw error;
+    }
   };
 
   const updateCampaign = async (id: string, updatedCampaign: Partial<Campaign>) => {
-    setCampaigns(campaigns.map(c => c.id === id ? { ...c, ...updatedCampaign } : c));
+    try {
+      const updated = await api.campaigns.update(id, {
+        name: updatedCampaign.name,
+        project_id: updatedCampaign.projectId ? parseInt(updatedCampaign.projectId) : undefined,
+        type: updatedCampaign.type,
+        objective: updatedCampaign.objective,
+        start_date: updatedCampaign.startDate,
+        end_date: updatedCampaign.endDate,
+        budget: updatedCampaign.budget,
+        status: updatedCampaign.status,
+        responsible_person_id: updatedCampaign.responsiblePerson ? parseInt(updatedCampaign.responsiblePerson) : undefined,
+        progress: updatedCampaign.progress
+      });
+      
+      setCampaigns(campaigns.map(c => c.id === id ? { ...c, ...updated } : c));
+      toast.success('تم تحديث الحملة بنجاح');
+    } catch (error) {
+      console.error('Error updating campaign:', error);
+      toast.error('فشل في تحديث الحملة');
+      throw error;
+    }
   };
 
   const deleteCampaign = async (id: string) => {
-    setCampaigns(campaigns.filter(c => c.id !== id));
+    try {
+      await api.campaigns.delete(id);
+      setCampaigns(campaigns.filter(c => c.id !== id));
+      toast.success('تم حذف الحملة بنجاح');
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      toast.error('فشل في حذف الحملة');
+      throw error;
+    }
   };
 
   // Content CRUD
   const addContent = async (contentData: Omit<Content, 'id' | 'createdAt' | 'attachments' | 'comments'>) => {
-    const newContent: Content = {
-      ...contentData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
-      attachments: [],
-      comments: []
-    };
-    setContent([...content, newContent]);
+    try {
+      const newContent = await api.contents.create({
+        title: contentData.title,
+        content_type: contentData.contentType,
+        project_id: contentData.projectId ? parseInt(contentData.projectId) : undefined,
+        campaign_id: contentData.campaignId ? parseInt(contentData.campaignId) : undefined,
+        status: contentData.status,
+        assigned_to: parseInt(contentData.assignedTo),
+        start_date: contentData.startDate,
+        due_date: contentData.dueDate,
+        publish_date: contentData.publishDate,
+        priority: contentData.priority,
+        progress: contentData.progress || 0,
+        design_brief: contentData.designBrief,
+        inspiration: contentData.inspiration,
+        design: contentData.design,
+        text_content: contentData.textContent,
+        drive_link: contentData.driveLink,
+        notes: contentData.notes,
+        month: contentData.month,
+        is_reel: contentData.isReel || false,
+        ready_for_calendar: contentData.readyForCalendar || false
+      });
+      
+      setContent([...content, newContent]);
+      toast.success('تم إضافة المحتوى بنجاح');
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding content:', error);
+      toast.error('فشل في إضافة المحتوى');
+      throw error;
+    }
   };
 
   const updateContent = async (id: string, updatedContent: Partial<Content>) => {
-    setContent(content.map(c => c.id === id ? { ...c, ...updatedContent } : c));
+    try {
+      const updated = await api.contents.update(id, {
+        title: updatedContent.title,
+        content_type: updatedContent.contentType,
+        project_id: updatedContent.projectId ? parseInt(updatedContent.projectId) : undefined,
+        campaign_id: updatedContent.campaignId ? parseInt(updatedContent.campaignId) : undefined,
+        status: updatedContent.status,
+        assigned_to: updatedContent.assignedTo ? parseInt(updatedContent.assignedTo) : undefined,
+        start_date: updatedContent.startDate,
+        due_date: updatedContent.dueDate,
+        publish_date: updatedContent.publishDate,
+        priority: updatedContent.priority,
+        progress: updatedContent.progress,
+        design_brief: updatedContent.designBrief,
+        inspiration: updatedContent.inspiration,
+        design: updatedContent.design,
+        text_content: updatedContent.textContent,
+        drive_link: updatedContent.driveLink,
+        notes: updatedContent.notes,
+        month: updatedContent.month,
+        is_reel: updatedContent.isReel,
+        ready_for_calendar: updatedContent.readyForCalendar
+      });
+      
+      setContent(content.map(c => c.id === id ? { ...c, ...updated } : c));
+      toast.success('تم تحديث المحتوى بنجاح');
+    } catch (error) {
+      console.error('Error updating content:', error);
+      toast.error('فشل في تحديث المحتوى');
+      throw error;
+    }
   };
 
   const deleteContent = async (id: string) => {
-    setContent(content.filter(c => c.id !== id));
+    try {
+      await api.contents.delete(id);
+      setContent(content.filter(c => c.id !== id));
+      toast.success('تم حذف المحتوى بنجاح');
+    } catch (error) {
+      console.error('Error deleting content:', error);
+      toast.error('فشل في حذف المحتوى');
+      throw error;
+    }
   };
 
   const markNotificationAsRead = (id: string) => {
@@ -310,55 +509,186 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Permissions management
   const canUserEdit = (role: UserRole, column: ColumnName): boolean => {
     const permission = permissions.find(p => p.role === role && p.column === column);
-    return permission?.canEdit || false;
+    return permission?.canEdit || (permission as any)?.can_edit || false;
   };
 
-  const updatePermission = (role: UserRole, column: ColumnName, canEdit: boolean) => {
-    const updated = permissions.map(p => 
-      p.role === role && p.column === column 
-        ? { ...p, canEdit } 
-        : p
-    );
-    setPermissions(updated);
-    localStorage.setItem('permissions', JSON.stringify(updated));
+  const updatePermission = async (role: UserRole, column: ColumnName, canEdit: boolean) => {
+    try {
+      await api.permissions.updatePermission(role, column, canEdit);
+      
+      const updated = permissions.map(p => 
+        p.role === role && p.column === column 
+          ? { ...p, canEdit, can_edit: canEdit } 
+          : p
+      );
+      setPermissions(updated);
+      
+      // حفظ نسخة احتياطية في localStorage
+      localStorage.setItem('permissions', JSON.stringify(updated));
+    } catch (error) {
+      console.error('Error updating permission:', error);
+      toast.error('فشل في تحديث الصلاحية');
+      throw error;
+    }
   };
 
-  const resetPermissions = () => {
-    const defaultPerms = getDefaultPermissions();
-    setPermissions(defaultPerms);
-    localStorage.setItem('permissions', JSON.stringify(defaultPerms));
+  const resetPermissions = async () => {
+    try {
+      const response = await api.permissions.resetToDefault();
+      setPermissions(response.permissions);
+      localStorage.setItem('permissions', JSON.stringify(response.permissions));
+      toast.success('تم إعادة تعيين الصلاحيات بنجاح');
+    } catch (error) {
+      console.error('Error resetting permissions:', error);
+      toast.error('فشل في إعادة تعيين الصلاحيات');
+      throw error;
+    }
   };
 
   // User management functions
   const updateUser = async (id: string, updatedUser: Partial<User>) => {
-    setUsers(users.map(u => u.id === id ? { ...u, ...updatedUser } : u));
+    try {
+      const updated = await api.users.update(id, {
+        name: updatedUser.name,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        department: updatedUser.department,
+        status: updatedUser.status
+      });
+      
+      setUsers(users.map(u => u.id === id ? { ...u, ...updated } : u));
+      toast.success('تم تحديث المستخدم بنجاح');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error('فشل في تحديث المستخدم');
+      throw error;
+    }
+  };
+
+  // Custom Roles management
+  const addCustomRole = async (roleData: Omit<CustomRole, 'id' | 'createdAt'>) => {
+    try {
+      const newRole = await api.permissions.addCustomRole({
+        name: roleData.name,
+        label: roleData.label,
+        emoji: roleData.emoji,
+        created_by: roleData.createdBy || currentUser?.name || 'admin'
+      });
+      
+      setCustomRoles([...customRoles, newRole.role]);
+      toast.success('تم إضافة الدور المخصص بنجاح');
+      await loadPermissions(); // إعادة تحميل الصلاحيات
+    } catch (error) {
+      console.error('Error adding custom role:', error);
+      toast.error('فشل في إضافة الدور المخصص');
+      throw error;
+    }
+  };
+
+  const updateCustomRole = async (id: string, updatedRole: Partial<CustomRole>) => {
+    try {
+      const updated = await api.permissions.updateCustomRole(id, {
+        label: updatedRole.label,
+        emoji: updatedRole.emoji
+      });
+      
+      setCustomRoles(customRoles.map(r => r.id === id ? { ...r, ...updated.role } : r));
+      toast.success('تم تحديث الدور المخصص بنجاح');
+    } catch (error) {
+      console.error('Error updating custom role:', error);
+      toast.error('فشل في تحديث الدور المخصص');
+      throw error;
+    }
+  };
+
+  const deleteCustomRole = async (id: string) => {
+    try {
+      await api.permissions.deleteCustomRole(id);
+      
+      const roleToDelete = customRoles.find(r => r.id === id);
+      setCustomRoles(customRoles.filter(r => r.id !== id));
+      
+      // حذف الصلاحيات المرتبطة بهذا الدور
+      if (roleToDelete) {
+        setPermissions(permissions.filter(p => p.role !== roleToDelete.name));
+      }
+      
+      toast.success('تم حذف الدور المخصص بنجاح');
+    } catch (error) {
+      console.error('Error deleting custom role:', error);
+      toast.error('فشل في حذف الدور المخصص');
+      throw error;
+    }
+  };
+
+  const getAllRoles = () => {
+    const defaultRoles = [
+      { value: 'admin', label: 'Admin', emoji: '👑', isCustom: false },
+      { value: 'account-manager', label: 'Account Manager', emoji: '👔', isCustom: false },
+      { value: 'graphic-designer', label: 'Graphic Designer', emoji: '🎨', isCustom: false },
+      { value: 'social-media', label: 'Social Media', emoji: '📱', isCustom: false },
+      { value: 'content-writer', label: 'Content Writer', emoji: '✍️', isCustom: false },
+      { value: 'video-editor', label: 'Video Editor', emoji: '🎬', isCustom: false },
+      { value: 'ads-specialist', label: 'Ads Specialist', emoji: '📢', isCustom: false },
+      { value: 'seo-specialist', label: 'SEO Specialist', emoji: '🔍', isCustom: false },
+    ];
+
+    const customRolesList = customRoles.map(role => ({
+      value: role.name,
+      label: role.label,
+      emoji: role.emoji,
+      isCustom: true,
+    }));
+
+    return [...defaultRoles, ...customRolesList];
   };
 
   const approveUser = async (userId: string) => {
-    // TODO: Replace with API call
-    const approvedUser = users.find(u => u.id === userId);
-    if (approvedUser) {
-      await updateUser(userId, {
-        status: 'active',
-        approvedBy: currentUser.name,
-        approvedAt: new Date().toISOString()
-      });
+    try {
+      await api.users.approve(userId);
+      await refreshData();
+      toast.success('تم الموافقة على المستخدم بنجاح');
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast.error('فشل في الموافقة على المستخدم');
+      throw error;
     }
   };
 
   const rejectUser = async (userId: string) => {
-    // TODO: Replace with API call
-    setUsers(users.filter(u => u.id !== userId));
+    try {
+      await api.users.reject(userId);
+      setUsers(users.filter(u => u.id !== userId));
+      toast.success('تم رفض المستخدم بنجاح');
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast.error('فشل في رفض المستخدم');
+      throw error;
+    }
   };
 
   const suspendUser = async (userId: string) => {
-    // TODO: Replace with API call
-    await updateUser(userId, { status: 'suspended' });
+    try {
+      await api.users.suspend(userId);
+      await refreshData();
+      toast.success('تم تعليق المستخدم بنجاح');
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      toast.error('فشل في تعليق المستخدم');
+      throw error;
+    }
   };
 
   const activateUser = async (userId: string) => {
-    // TODO: Replace with API call
-    await updateUser(userId, { status: 'active' });
+    try {
+      await api.users.activate(userId);
+      await refreshData();
+      toast.success('تم تفعيل المستخدم بنجاح');
+    } catch (error) {
+      console.error('Error activating user:', error);
+      toast.error('فشل في تفعيل المستخدم');
+      throw error;
+    }
   };
 
   return (
@@ -370,7 +700,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       content,
       users,
       notifications,
-      currentUser,
+      currentUser: currentUser || {} as User,
       loading,
       permissions,
       addClient,
@@ -398,6 +728,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       suspendUser,
       activateUser,
       updateUser,
+      customRoles,
+      addCustomRole,
+      updateCustomRole,
+      deleteCustomRole,
+      getAllRoles,
     }}>
       {children}
     </DataContext.Provider>

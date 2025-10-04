@@ -1,4 +1,4 @@
-import { Client, Project, Task, Campaign, Content, User, Notification } from '@/types';
+import { Client, Project, Task, Campaign, Content, User, Notification, ClientUser, ClientNotification } from '@/types';
 
 export const users: User[] = [
   { 
@@ -767,6 +767,87 @@ export const notifications: Notification[] = [
     link: '/tasks/8',
     read: true,
     createdAt: '2025-09-28T09:00:00Z',
+  },
+];
+
+export const clientUsers: ClientUser[] = [
+  {
+    id: 'client-1',
+    name: 'Mohamed Salah',
+    email: 'mohamed@techstart.com',
+    password: '123456',
+    phone: '+20 100 555 0001',
+    company: 'TechStart Solutions',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mohamed',
+    clientId: '1', // Links to TechStart Solutions
+    status: 'active',
+    joinedAt: '2024-01-15',
+    lastLogin: '2024-12-01T10:30:00Z',
+  },
+  {
+    id: 'client-2',
+    name: 'Sarah Ahmed',
+    email: 'sarah@greenlife.com',
+    password: '123456',
+    phone: '+20 101 555 0002',
+    company: 'GreenLife Organic',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    clientId: '2', // Links to GreenLife Organic
+    status: 'active',
+    joinedAt: '2024-02-10',
+    lastLogin: '2024-11-30T14:20:00Z',
+  },
+  {
+    id: 'client-3',
+    name: 'Omar Khaled',
+    email: 'omar@urbanstyle.com',
+    password: '123456',
+    phone: '+20 102 555 0003',
+    company: 'Urban Style Fashion',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Omar',
+    clientId: '3', // Links to Urban Style Fashion
+    status: 'active',
+    joinedAt: '2024-03-05',
+    lastLogin: '2024-11-29T16:45:00Z',
+  },
+];
+
+export const clientNotifications: ClientNotification[] = [
+  {
+    id: 'notif-1',
+    title: 'Project Update',
+    message: 'Your Q1 Campaign project is now 75% complete! 3 new content pieces have been published.',
+    type: 'success',
+    projectId: '1',
+    read: false,
+    createdAt: '2024-12-01T09:00:00Z',
+  },
+  {
+    id: 'notif-2',
+    title: 'Content Ready for Review',
+    message: 'New social media posts are ready for your review in the Social Calendar.',
+    type: 'info',
+    projectId: '1',
+    read: false,
+    createdAt: '2024-11-30T15:30:00Z',
+  },
+  {
+    id: 'notif-3',
+    title: 'Campaign Launch',
+    message: 'Your Spring Collection campaign has been successfully launched across all platforms!',
+    type: 'success',
+    projectId: '2',
+    read: true,
+    createdAt: '2024-11-29T11:15:00Z',
+  },
+  {
+    id: 'notif-4',
+    title: 'Deadline Reminder',
+    message: 'Content approval deadline is approaching for your Urban Style project (Due: Dec 5th)',
+    type: 'warning',
+    projectId: '3',
+    read: false,
+    createdAt: '2024-11-28T10:00:00Z',
   },
 ];
 

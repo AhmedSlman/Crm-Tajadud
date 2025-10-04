@@ -22,6 +22,14 @@ export default function ProtectedRoute({
 
   useEffect(() => {
     if (!loading) {
+      // Check if client is trying to access admin routes
+      const clientUser = localStorage.getItem('clientUser');
+      if (clientUser) {
+        // Client is logged in, redirect to client dashboard
+        router.push('/client-dashboard');
+        return;
+      }
+
       // Not authenticated - redirect to login
       if (!isAuthenticated) {
         router.push('/auth/login');

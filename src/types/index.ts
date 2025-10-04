@@ -106,6 +106,8 @@ export type KPI = {
 export type ContentType = 'post' | 'video' | 'article' | 'graphic' | 'email' | 'other';
 export type ContentStatus = 'idea' | 'in-progress' | 'review' | 'approved' | 'scheduled' | 'published';
 
+export type ProjectStatus = 'planned' | 'in-progress' | 'completed' | 'on-hold';
+
 export type Content = {
   id: string;
   title: string;
@@ -168,7 +170,18 @@ export type UserRole =
   | 'content-writer' 
   | 'video-editor' 
   | 'ads-specialist'
-  | 'seo-specialist';
+  | 'seo-specialist'
+  | string; // Allow custom roles
+
+export type CustomRole = {
+  id: string;
+  name: string; // e.g., "project-manager"
+  label: string; // e.g., "Project Manager"
+  emoji: string; // e.g., "📋"
+  isCustom: boolean;
+  createdAt: string;
+  createdBy: string;
+};
 
 export type UserStatus = 'pending' | 'active' | 'suspended';
 
@@ -185,6 +198,20 @@ export type User = {
   joinedAt: string;
   approvedBy?: string;
   approvedAt?: string;
+};
+
+export type ClientUser = {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  phone: string;
+  company: string;
+  avatar: string;
+  clientId: string; // Links to Client record
+  status: 'active' | 'suspended';
+  joinedAt: string;
+  lastLogin?: string;
 };
 
 export type AuthUser = {
@@ -208,6 +235,33 @@ export type RegisterData = {
   password: string;
   phone: string;
   role: UserRole;
+};
+
+export type ClientProjectView = {
+  id: string;
+  name: string;
+  description: string;
+  status: ProjectStatus;
+  progress: number;
+  startDate: string;
+  endDate: string;
+  projectManager: string;
+  totalTasks: number;
+  completedTasks: number;
+  totalContent: number;
+  publishedContent: number;
+  activeCampaigns: number;
+  nextDeadline?: string;
+};
+
+export type ClientNotification = {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'update';
+  projectId?: string;
+  read: boolean;
+  createdAt: string;
 };
 
 export type ColumnName = 
