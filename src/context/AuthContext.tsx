@@ -34,23 +34,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem('token');
       
       if (savedUser && token) {
-        // التحقق من صحة التوكن مع الخادم
-        const validation = await authAPI.validateToken();
-        
-        if (validation.valid && validation.user) {
-          setUser(validation.user as AuthUser);
-          // تحديث البيانات المحلية
-          localStorage.setItem('user', JSON.stringify(validation.user));
-        } else {
-          // التوكن غير صالح، مسح البيانات
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
+        try {
+          // التحقق من صحة التوكن مع الخادم
+          const validation = await authAPI.validateToken();
+          
+          if (validation.valid && validation.user) {
+            setUser(validation.user as AuthUser);
+            // تحديث البيانات المحلية
+            localStorage.setItem('user', JSON.stringify(validation.user));
+          } else {
+            // التوكن غير صالح، مسح البيانات
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setUser(null);
+          }
+        } catch (error) {
+          // إذا فشل التحقق من التوكن، استخدم البيانات المحفوظة محلياً
+          console.log('Token validation failed, using cached user data');
+          setUser(JSON.parse(savedUser));
         }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      // لا تمسح البيانات في حالة فشل الاتصال بالخادم
     } finally {
       setLoading(false);
     }

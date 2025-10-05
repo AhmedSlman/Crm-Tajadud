@@ -35,7 +35,36 @@ const createHeaders = (isClient = false): HeadersInit => {
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+    
+    // استخراج رسالة الخطأ من Laravel
+    let errorMessage = errorData.error || errorData.message;
+    
+    // معالجة أخطاء Laravel Validation
+    if (errorData.errors) {
+      // إذا كان هناك أخطاء validation متعددة
+      const firstError = Object.values(errorData.errors)[0];
+      if (Array.isArray(firstError) && firstError.length > 0) {
+        errorMessage = firstError[0];
+      }
+    }
+    
+    // معالجة أخطاء قاعدة البيانات
+    if (errorMessage && typeof errorMessage === 'string') {
+      // Duplicate entry error
+      if (errorMessage.includes('Duplicate entry') && errorMessage.includes('email')) {
+        errorMessage = 'This email address is already registered';
+      }
+      // Foreign key constraint
+      else if (errorMessage.includes('foreign key constraint')) {
+        errorMessage = 'Cannot delete: This item is being used by other records';
+      }
+      // Unique constraint
+      else if (errorMessage.includes('unique constraint')) {
+        errorMessage = 'This value already exists in the system';
+      }
+    }
+    
+    throw new Error(errorMessage || `HTTP ${response.status}`);
   }
   return response.json();
 };

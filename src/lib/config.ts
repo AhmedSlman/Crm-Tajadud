@@ -3,7 +3,7 @@
 export const config = {
   // API Configuration
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://crm-api.tajadud.org/public/api',
     timeout: 10000, // 10 seconds
   },
 
