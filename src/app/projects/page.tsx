@@ -11,6 +11,7 @@ import Input, { Textarea } from '@/components/Input';
 import Select from '@/components/Select';
 import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
+import LoadingState, { LoadingSpinner } from '@/components/LoadingState';
 import { Plus, Pencil, Trash2, Calendar, User, Download, FolderKanban, TrendingUp } from 'lucide-react';
 import { Project } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
@@ -18,12 +19,13 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function ProjectsPage() {
-  const { projects, clients, users, addProject, updateProject, deleteProject } = useData();
+  const { projects, clients, users, addProject, updateProject, deleteProject, loading } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterClient, setFilterClient] = useState<string>('all');
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -70,6 +72,7 @@ export default function ProjectsPage() {
       return;
     }
 
+    setSubmitting(true);
     try {
       if (editingProject) {
         await updateProject(editingProject.id, formData);
@@ -93,6 +96,8 @@ export default function ProjectsPage() {
       toast.error('Failed to save project', {
         description: error instanceof Error ? error.message : 'Please try again',
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -141,8 +146,8 @@ export default function ProjectsPage() {
         'Start Date': project.startDate,
         'End Date': project.endDate,
         'Progress': `${project.progress}%`,
-        'Total Tasks': project.linkedTasks.length,
-        'Total Campaigns': project.linkedCampaigns.length,
+        'Total Tasks': project.linkedTasks?.length || 0,
+        'Total Campaigns': project.linkedCampaigns?.length || 0,
       };
     });
     exportToCSV(exportData, 'projects');
@@ -150,6 +155,17 @@ export default function ProjectsPage() {
       description: 'File downloaded successfully',
     });
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <LoadingState 
+        title="Projects"
+        subtitle="Manage your projects and track progress"
+        message="Loading projects..."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -290,15 +306,29 @@ export default function ProjectsPage() {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => !submitting && setIsModalOpen(false)}
         title={editingProject ? 'Edit Project' : 'New Project'}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsModalOpen(false)}
+              disabled={submitting}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
-              {editingProject ? 'Update' : 'Create'}
+            <Button 
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  {editingProject ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingProject ? 'Update' : 'Create'
+              )}
             </Button>
           </>
         }

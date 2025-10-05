@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { Content, UserRole, ColumnName } from '@/types';
 import Button from '@/components/Button';
@@ -16,53 +16,89 @@ type ContentPlanTableProps = {
   projectId: string;
   month: string;
   userRole: UserRole;
+  onRefresh?: () => void;
 };
 
 export default function ContentPlanTable({ 
   content, 
   projectId, 
   month, 
-  userRole 
+  userRole,
+  onRefresh
 }: ContentPlanTableProps) {
   const { addContent, updateContent, deleteContent, users, canUserEdit } = useData();
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Local state for optimistic updates
+  const [localContent, setLocalContent] = useState<Content[]>(content);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  
+  // Update local content when props change, but exclude deleted items
+  useEffect(() => {
+    setLocalContent(content.filter(c => !deletedIds.has(String(c.id))));
+  }, [content, deletedIds]);
+  
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    contentType: 'post' as Content['contentType'],
+    status: 'idea' as Content['status'],
+    assignedTo: users[0]?.id || '',
+    startDate: today,
+    dueDate: tomorrowStr,
+    priority: 'medium' as Content['priority'],
+  });
 
   const handleEditStart = (contentId: string, field: string, currentValue: string) => {
     setEditingCell({ id: contentId, field });
-    setEditValue(currentValue || '');
+    setEditValue(currentValue ?? '');
   };
 
   const handleEditSave = async () => {
     if (!editingCell) return;
 
+    // Map field names from kebab-case to camelCase
+    const fieldMap: Record<string, keyof Content> = {
+      'design-brief': 'designBrief',
+      'inspiration': 'inspiration',
+      'design': 'design',
+      'text-content': 'textContent',
+      'drive-link': 'driveLink',
+      'notes': 'notes',
+    };
+ 
+    const actualFieldName = fieldMap[editingCell.field] || editingCell.field;
+    
+    const updates: Partial<Content> = {
+      [actualFieldName]: editValue,
+    };
+
+    // Optimistic update
+    const updatedContent = localContent.map(c =>
+      c.id === editingCell.id ? { ...c, ...updates } : c
+    );
+    setLocalContent(updatedContent);
+    setEditingCell(null);
+    setEditValue('');
+    toast.success('Content updated! ✅', {
+      description: `${editingCell.field.replace('-', ' ')} has been saved`,
+    });
+
+    // Update in backend
     try {
-      // Map field names from kebab-case to camelCase
-      const fieldMap: Record<string, keyof Content> = {
-        'design-brief': 'designBrief',
-        'inspiration': 'inspiration',
-        'design': 'design',
-        'text-content': 'textContent',
-        'drive-link': 'driveLink',
-        'notes': 'notes',
-      };
-
-      const actualFieldName = fieldMap[editingCell.field] || editingCell.field;
-      
-      const updates: Partial<Content> = {
-        [actualFieldName]: editValue,
-      };
-
       await updateContent(editingCell.id, updates);
-      setEditingCell(null);
-      setEditValue('');
-      toast.success('Content updated! ✅', {
-        description: `${editingCell.field.replace('-', ' ')} has been saved`,
-      });
     } catch (error) {
+      setLocalContent(content); // revert
       toast.error('Failed to update content');
     }
   };
@@ -72,28 +108,59 @@ export default function ContentPlanTable({
     setEditValue('');
   };
 
-  const handleAddContent = async () => {
+  const handleOpenAddModal = () => {
+    setFormData({
+      title: '',
+      contentType: 'post',
+      status: 'idea',
+      assignedTo: users[0]?.id || '',
+      startDate: today,
+      dueDate: tomorrowStr,
+      priority: 'medium',
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleSubmitAdd = async () => {
+    if (!formData.title) {
+      toast.error('Please enter content title');
+      return;
+    }
+
+    if (formData.dueDate <= formData.startDate) {
+      toast.error('Due date must be after start date');
+      return;
+    }
+
+    setSubmitting(true);
     try {
       await addContent({
-        title: 'New Content Item',
-        contentType: 'post',
-        status: 'idea',
-        projectId,
-        assignedTo: users[0]?.id || '',
+        title: formData.title,
+        contentType: formData.contentType,
+        status: formData.status,
+        projectId: String(projectId),
+        assignedTo: formData.assignedTo,
         createdBy: '1',
-        startDate: new Date().toISOString().split('T')[0],
-        dueDate: new Date().toISOString().split('T')[0],
-        priority: 'medium',
+        startDate: formData.startDate,
+        dueDate: formData.dueDate,
+        priority: formData.priority,
         progress: 0,
         month,
         isReel: false,
         readyForCalendar: false,
       });
-      toast.success('Content item added! 🎉', {
-        description: 'You can now fill in the details',
-      });
+      
+      toast.success('Content added! 🎉');
+      setIsAddModalOpen(false);
+      
+      // Refresh project data
+      if (onRefresh) onRefresh();
     } catch (error) {
-      toast.error('Failed to add content');
+      toast.error('Failed to add content', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -110,10 +177,18 @@ export default function ContentPlanTable({
   };
 
   const handleStatusChange = async (contentId: string, newStatus: string) => {
+    // Optimistic update
+    const updatedContent = localContent.map(c =>
+      c.id === contentId ? { ...c, status: newStatus as Content['status'] } : c
+    );
+    setLocalContent(updatedContent);
+    toast.success('Status updated!');
+
+    // Update in backend
     try {
       await updateContent(contentId, { status: newStatus as Content['status'] });
-      toast.success('Status updated!');
     } catch (error) {
+      setLocalContent(content); // revert
       toast.error('Failed to update status');
     }
   };
@@ -142,12 +217,23 @@ export default function ContentPlanTable({
   };
 
   const handleDeleteContent = async (contentId: string) => {
+    const item = localContent.find(c => c.id === contentId);
+    
+    // Mark as deleted immediately
+    setDeletedIds(prev => new Set(prev).add(String(contentId)));
+    toast.success(`${item?.title} deleted! 🗑️`);
+    setDeleteConfirmId(null);
+
+    // Delete in backend (404 errors are handled silently by API)
     try {
-      const item = content.find(c => c.id === contentId);
       await deleteContent(contentId);
-      toast.success(`${item?.title} deleted! 🗑️`);
-      setDeleteConfirmId(null);
     } catch (error) {
+      // Only revert on real errors (404 won't throw)
+      setDeletedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(String(contentId));
+        return newSet;
+      });
       toast.error('Failed to delete content');
     }
   };
@@ -238,7 +324,7 @@ export default function ContentPlanTable({
             Manage your content workflow. Click on cells to edit.
           </p>
         </div>
-        <Button onClick={handleAddContent}>
+        <Button onClick={handleOpenAddModal}>
           <Plus size={18} className="mr-2" />
           Add Content
         </Button>
@@ -280,14 +366,14 @@ export default function ContentPlanTable({
               </tr>
             </thead>
             <tbody>
-              {content.length === 0 ? (
+              {localContent.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
                     No content items yet. Click &quot;Add Content&quot; to create one.
                   </td>
                 </tr>
               ) : (
-                content.map((item) => {
+                localContent.map((item) => {
                   const statusInfo = getStatusBadge(item.status);
                   
                   return (
@@ -459,6 +545,114 @@ export default function ContentPlanTable({
           </div>
         </Modal>
       )}
+      {/* Add Content Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => !submitting && setIsAddModalOpen(false)}
+        title="Add New Content"
+        footer={
+          <>
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsAddModalOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitAdd}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                'Create Content'
+              )}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Content Title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="Enter content title"
+            required
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Content Type"
+              value={formData.contentType}
+              onChange={(e) => setFormData({ ...formData, contentType: e.target.value as Content['contentType'] })}
+              options={[
+                { value: 'post', label: 'Post' },
+                { value: 'story', label: 'Story' },
+                { value: 'video', label: 'Video' },
+                { value: 'carousel', label: 'Carousel' },
+              ]}
+            />
+
+            <Select
+              label="Priority"
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value as Content['priority'] })}
+              options={[
+                { value: 'low', label: 'Low' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'high', label: 'High' },
+                { value: 'urgent', label: 'Urgent' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Start Date"
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              required
+            />
+
+            <Input
+              label="Due Date"
+              type="date"
+              value={formData.dueDate}
+              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              min={formData.startDate}
+              required
+            />
+          </div>
+
+          <Select
+            label="Assign To"
+            value={formData.assignedTo}
+            onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+            options={users.map(u => ({ 
+              value: u.id, 
+              label: u.name 
+            }))}
+          />
+
+          <Select
+            label="Status"
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as Content['status'] })}
+            options={[
+              { value: 'idea', label: 'Idea' },
+              { value: 'in-progress', label: 'In Progress' },
+              { value: 'review', label: 'Review' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'published', label: 'Published' },
+            ]}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

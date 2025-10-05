@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Button from '@/components/Button';
+import LoadingState from '@/components/LoadingState';
+import api from '@/lib/api';
+import { Task, Campaign, Content } from '@/types';
 import { 
   Calendar, 
   ChevronLeft, 
@@ -14,6 +17,7 @@ import {
   Video
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 // Sub-components imports (will create them)
 import ProjectStats from '@/components/project/ProjectStats';
@@ -37,35 +41,90 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 }
 
 function ProjectDetailContent({ projectId }: { projectId: string }) {
-  const { projects, tasks, campaigns, content } = useData();
+  const { projects, loading: globalLoading } = useData();
   const { user } = useAuth();
   
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState<TabType>('tasks');
+  
+  // Project-specific data
+  const [projectTasks, setProjectTasks] = useState<Task[]>([]);
+  const [projectCampaigns, setProjectCampaigns] = useState<Campaign[]>([]);
+  const [projectContent, setProjectContent] = useState<Content[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Find the project
-  const project = projects.find(p => p.id === projectId);
+  // Fetch project-specific data
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all project data in parallel
+        const [tasksData, campaignsData, contentData] = await Promise.all([
+          api.tasks.getProjectTasks(projectId),
+          api.campaigns.getProjectCampaigns(projectId),
+          api.contents.getProjectContents(projectId),
+        ]);
+        
+        setProjectTasks(tasksData);
+        setProjectCampaigns(campaignsData);
+        setProjectContent(contentData);
+      } catch (error) {
+        console.error('Failed to fetch project data:', error);
+        toast.error('Failed to load project data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (projectId) {
+      fetchProjectData();
+    }
+  }, [projectId, refreshKey]);
+
+  // Refresh function to be called after CRUD operations
+  const refreshProjectData = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  
+  // Show loading state
+  if (loading || globalLoading) {
+    return (
+      <LoadingState 
+        title="Project Details"
+        subtitle="Loading project information..."
+        message="Please wait..."
+      />
+    );
+  }
+
+  // Find the project (handle both string and number IDs)
+  const project = projects.find(p => String(p.id) === String(projectId));
 
   if (!project) {
     return (
       <div className="text-center py-20">
         <h1 className="text-2xl font-bold text-white mb-4">Project not found</h1>
+        <p className="text-gray-400 mb-6">
+          The project you're looking for doesn't exist or has been deleted.
+        </p>
         <Link href="/projects">
-          <Button variant="secondary">Back to Projects</Button>
+          <Button variant="secondary">
+            <ChevronLeft size={16} className="mr-2" />
+            Back to Projects
+          </Button>
         </Link>
       </div>
     );
   }
 
-  // Filter data by project and month
+  // Filter data by month
   const monthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
   
-  const projectTasks = tasks.filter(t => t.projectId === projectId);
-  const projectCampaigns = campaigns.filter(c => c.projectId === projectId);
-  const projectContent = content.filter(c => c.projectId === projectId);
-  
   const monthTasks = projectTasks.filter(t => {
-    const taskMonth = t.dueDate.substring(0, 7);
+    const taskMonth = t.dueDate?.substring(0, 7);
     return taskMonth === monthKey;
   });
 
@@ -148,6 +207,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
             tasks={projectTasks} 
             projectId={projectId}
             month={monthKey}
+            onRefresh={refreshProjectData}
           />
         )}
         
@@ -157,6 +217,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
             projectId={projectId}
             month={monthKey}
             userRole={user?.role || 'admin'}
+            onRefresh={refreshProjectData}
           />
         )}
         
@@ -166,6 +227,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
             projectId={projectId}
             month={monthKey}
             userRole={user?.role || 'admin'}
+            onRefresh={refreshProjectData}
           />
         )}
         
@@ -173,6 +235,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
           <CampaignContent 
             campaigns={projectCampaigns}
             projectId={projectId}
+            onRefresh={refreshProjectData}
           />
         )}
         
@@ -180,6 +243,8 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
           <SocialCalendarView 
             month={selectedMonth}
             projectId={projectId}
+            content={projectContent}
+            onRefresh={refreshProjectData}
           />
         )}
       </div>

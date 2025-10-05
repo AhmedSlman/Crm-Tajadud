@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
@@ -9,16 +9,27 @@ import Modal from '@/components/Modal';
 import Input, { Textarea } from '@/components/Input';
 import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
+import LoadingState, { LoadingSpinner } from '@/components/LoadingState';
 import { Plus, Pencil, Trash2, Mail, Phone, Building, Download, Users as UsersIcon } from 'lucide-react';
 import { Client } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function ClientsPage() {
-  const { clients, addClient, updateClient, deleteClient, projects } = useData();
+  const { clients, addClient, updateClient, deleteClient, projects, loading } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Local state for optimistic updates
+  const [localClients, setLocalClients] = useState<Client[]>(clients);
+  
+  // Update local clients when props change
+  useEffect(() => {
+    setLocalClients(clients);
+  }, [clients]);
+  
   const [formData, setFormData] = useState({
     name: '',
     contactPerson: '',
@@ -59,11 +70,30 @@ export default function ClientsPage() {
       return;
     }
 
-    try {
-      if (editingClient) {
+    setSubmitting(true);
+    
+    if (editingClient) {
+      // Optimistic update for edit
+      const updatedClients = localClients.map(c =>
+        c.id === editingClient.id ? { ...c, ...formData } : c
+      );
+      setLocalClients(updatedClients);
+      toast.success(`${formData.name} updated successfully! ✅`);
+      setIsModalOpen(false);
+      setSubmitting(false);
+      
+      // Update in backend
+      try {
         await updateClient(editingClient.id, formData);
-        toast.success(`${formData.name} updated successfully! ✅`);
-      } else {
+      } catch (error) {
+        setLocalClients(clients); // revert
+        toast.error('Failed to save client', {
+          description: error instanceof Error ? error.message : 'Please try again',
+        });
+      }
+    } else {
+      // For new client, wait for backend (to get real ID)
+      try {
         const newClient: Client = {
           id: Date.now().toString(),
           ...formData,
@@ -72,22 +102,30 @@ export default function ClientsPage() {
         };
         await addClient(newClient);
         toast.success(`${formData.name} added successfully! 🎉`);
+        setIsModalOpen(false);
+      } catch (error) {
+        toast.error('Failed to save client', {
+          description: error instanceof Error ? error.message : 'Please try again',
+        });
+      } finally {
+        setSubmitting(false);
       }
-      setIsModalOpen(false);
-    } catch (error) {
-      toast.error('Failed to save client', {
-        description: error instanceof Error ? error.message : 'Please try again',
-      });
     }
   };
 
-  const handleDelete = (id: string) => {
-    const client = clients.find(c => c.id === id);
+  const handleDelete = async (id: string) => {
+    const client = localClients.find(c => c.id === id);
     if (confirm(`Are you sure you want to delete ${client?.name}?`)) {
+      // Optimistic delete
+      const updatedClients = localClients.filter(c => c.id !== id);
+      setLocalClients(updatedClients);
+      toast.success(`${client?.name} deleted successfully! 🗑️`);
+      
+      // Delete in backend
       try {
-        deleteClient(id);
-        toast.success(`${client?.name} deleted successfully! 🗑️`);
+        await deleteClient(id);
       } catch (error) {
+        setLocalClients(clients); // revert
         toast.error('Failed to delete client');
       }
     }
@@ -118,6 +156,17 @@ export default function ClientsPage() {
       description: 'File downloaded successfully',
     });
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <LoadingState 
+        title="Clients"
+        subtitle="Manage your client relationships"
+        message="Loading clients..."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -241,15 +290,29 @@ export default function ClientsPage() {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => !submitting && setIsModalOpen(false)}
         title={editingClient ? 'Edit Client' : 'Add New Client'}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsModalOpen(false)}
+              disabled={submitting}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
-              {editingClient ? 'Update' : 'Create'}
+            <Button 
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  {editingClient ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingClient ? 'Update' : 'Create'
+              )}
             </Button>
           </>
         }

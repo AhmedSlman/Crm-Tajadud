@@ -32,7 +32,7 @@ const createHeaders = (isClient = false): HeadersInit => {
 };
 
 // Helper function للتعامل مع الاستجابات
-const handleResponse = async (response: Response) => {
+const handleResponse = async (response: Response, options?: { silent404?: boolean }) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     
@@ -64,9 +64,20 @@ const handleResponse = async (response: Response) => {
       }
     }
     
+    // If silent404 is enabled and it's a 404, treat as success (item already deleted)
+    if (options?.silent404 && response.status === 404) {
+      return { success: true, message: 'Item already deleted' };
+    }
+    
     throw new Error(errorMessage || `HTTP ${response.status}`);
   }
-  return response.json();
+  
+  // Handle empty responses (like DELETE operations)
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return response.json();
+  }
+  return { success: true };
 };
 
 // Authentication API
@@ -559,7 +570,7 @@ export const tasksAPI = {
       headers: createHeaders(),
     });
 
-    await handleResponse(response);
+    await handleResponse(response, { silent404: true });
   },
 
   // إضافة تعليق للمهمة
@@ -652,7 +663,7 @@ export const campaignsAPI = {
       headers: createHeaders(),
     });
 
-    await handleResponse(response);
+    await handleResponse(response, { silent404: true });
   },
 
   // إضافة KPI للحملة
@@ -749,7 +760,7 @@ export const contentsAPI = {
       headers: createHeaders(),
     });
 
-    await handleResponse(response);
+    await handleResponse(response, { silent404: true });
   },
 
   // إضافة تعليق للمحتوى

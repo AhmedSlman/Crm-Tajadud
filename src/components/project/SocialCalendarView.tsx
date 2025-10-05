@@ -9,10 +9,12 @@ import { toast } from 'sonner';
 type SocialCalendarViewProps = {
   month: Date;
   projectId: string;
+  content: Content[];
+  onRefresh?: () => void;
 };
 
-export default function SocialCalendarView({ month, projectId }: SocialCalendarViewProps) {
-  const { content, updateContent } = useData();
+export default function SocialCalendarView({ month, projectId, content, onRefresh }: SocialCalendarViewProps) {
+  const { updateContent } = useData();
   const [draggedItem, setDraggedItem] = useState<Content | null>(null);
 
   const year = month.getFullYear();
@@ -81,6 +83,9 @@ export default function SocialCalendarView({ month, projectId }: SocialCalendarV
       toast.success(`${draggedItem.title} scheduled! 📅`, {
         description: `Will be published on ${new Date(dateStr).toLocaleDateString()}`,
       });
+      
+      // Refresh project data
+      if (onRefresh) onRefresh();
     } catch (error) {
       toast.error('Failed to schedule content');
     }
@@ -95,6 +100,9 @@ export default function SocialCalendarView({ month, projectId }: SocialCalendarV
       toast.success(`${item?.title} published! 🎉`, {
         description: 'Content is now live',
       });
+      
+      // Refresh project data
+      if (onRefresh) onRefresh();
     } catch (error) {
       toast.error('Failed to publish content');
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { Content, UserRole, ColumnName } from '@/types';
 import Button from '@/components/Button';
@@ -16,48 +16,83 @@ type ReelsPlanTableProps = {
   projectId: string;
   month: string;
   userRole: UserRole;
+  onRefresh?: () => void;
 };
 
-export default function ReelsPlanTable({ reels, projectId, month, userRole }: ReelsPlanTableProps) {
+export default function ReelsPlanTable({ reels, projectId, month, userRole, onRefresh }: ReelsPlanTableProps) {
   const { addContent, updateContent, deleteContent, users, canUserEdit } = useData();
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingReel, setEditingReel] = useState<Content | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Local state for optimistic updates
+  const [localReels, setLocalReels] = useState<Content[]>(reels);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  
+  // Update local reels when props change, but exclude deleted items
+  useEffect(() => {
+    setLocalReels(reels.filter(r => !deletedIds.has(String(r.id))));
+  }, [reels, deletedIds]);
+  
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    contentType: 'video' as Content['contentType'],
+    status: 'idea' as Content['status'],
+    assignedTo: users[0]?.id || '',
+    startDate: today,
+    dueDate: tomorrowStr,
+    priority: 'medium' as Content['priority'],
+  });
 
   const handleEditStart = (contentId: string, field: string, currentValue: string) => {
     setEditingCell({ id: contentId, field });
-    setEditValue(currentValue || '');
+    setEditValue(currentValue ?? '');
   };
 
   const handleEditSave = async () => {
     if (!editingCell) return;
 
+    // Map field names from kebab-case to camelCase
+    const fieldMap: Record<string, keyof Content> = {
+      'design-brief': 'designBrief',
+      'inspiration': 'inspiration',
+      'design': 'design',
+      'text-content': 'textContent',
+      'drive-link': 'driveLink',
+      'notes': 'notes',
+    };
+
+    const actualFieldName = fieldMap[editingCell.field] || editingCell.field;
+    
+    const updates: Partial<Content> = {
+      [actualFieldName]: editValue,
+    };
+
+    // Optimistic update
+    const updatedReels = localReels.map(r =>
+      r.id === editingCell.id ? { ...r, ...updates } : r
+    );
+    setLocalReels(updatedReels);
+    setEditingCell(null);
+    setEditValue('');
+    toast.success('Reel updated! ✅', {
+      description: `${editingCell.field.replace('-', ' ')} has been saved`,
+    });
+
+    // Update in backend
     try {
-      // Map field names from kebab-case to camelCase
-      const fieldMap: Record<string, keyof Content> = {
-        'design-brief': 'designBrief',
-        'inspiration': 'inspiration',
-        'design': 'design',
-        'text-content': 'textContent',
-        'drive-link': 'driveLink',
-        'notes': 'notes',
-      };
-
-      const actualFieldName = fieldMap[editingCell.field] || editingCell.field;
-      
-      const updates: Partial<Content> = {
-        [actualFieldName]: editValue,
-      };
-
       await updateContent(editingCell.id, updates);
-      setEditingCell(null);
-      setEditValue('');
-      toast.success('Reel updated! ✅', {
-        description: `${editingCell.field.replace('-', ' ')} has been saved`,
-      });
     } catch (error) {
+      setLocalReels(reels); // revert
       toast.error('Failed to update reel');
     }
   };
@@ -67,34 +102,65 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole }: Re
     setEditValue('');
   };
 
-  const handleAddReel = async () => {
+  const handleOpenAddModal = () => {
+    setFormData({
+      title: '',
+      contentType: 'video',
+      status: 'idea',
+      assignedTo: users[0]?.id || '',
+      startDate: today,
+      dueDate: tomorrowStr,
+      priority: 'medium',
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleSubmitAdd = async () => {
+    if (!formData.title) {
+      toast.error('Please enter reel title');
+      return;
+    }
+
+    if (formData.dueDate <= formData.startDate) {
+      toast.error('Due date must be after start date');
+      return;
+    }
+
+    setSubmitting(true);
     try {
       await addContent({
-        title: 'New Reel',
-        contentType: 'video',
-        status: 'idea',
-        projectId,
-        assignedTo: users[0]?.id || '',
+        title: formData.title,
+        contentType: formData.contentType,
+        status: formData.status,
+        projectId: String(projectId),
+        assignedTo: formData.assignedTo,
         createdBy: '1',
-        startDate: new Date().toISOString().split('T')[0],
-        dueDate: new Date().toISOString().split('T')[0],
-        priority: 'medium',
+        startDate: formData.startDate,
+        dueDate: formData.dueDate,
+        priority: formData.priority,
         progress: 0,
         month,
         isReel: true, // This is the key difference!
         readyForCalendar: false,
       });
-      toast.success('Reel added! 🎬', {
-        description: 'You can now fill in the details',
-      });
+      
+      toast.success('Reel added! 🎬');
+      setIsAddModalOpen(false);
+      
+      // Refresh project data
+      if (onRefresh) onRefresh();
     } catch (error) {
-      toast.error('Failed to add reel');
+      toast.error('Failed to add reel', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleMarkReady = async (contentId: string) => {
     try {
-      const item = reels.find(c => c.id === contentId);
+      const item = localReels.find(c => c.id === contentId);
       await updateContent(contentId, { readyForCalendar: true, status: 'approved' });
       toast.success(`${item?.title} is ready for calendar! 📅`, {
         description: 'You can now drag it to the social calendar',
@@ -105,10 +171,18 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole }: Re
   };
 
   const handleStatusChange = async (contentId: string, newStatus: string) => {
+    // Optimistic update
+    const updatedReels = localReels.map(r =>
+      r.id === contentId ? { ...r, status: newStatus as Content['status'] } : r
+    );
+    setLocalReels(updatedReels);
+    toast.success('Status updated!');
+
+    // Update in backend
     try {
       await updateContent(contentId, { status: newStatus as Content['status'] });
-      toast.success('Status updated!');
     } catch (error) {
+      setLocalReels(reels); // revert
       toast.error('Failed to update status');
     }
   };
@@ -137,12 +211,23 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole }: Re
   };
 
   const handleDeleteReel = async (reelId: string) => {
+    const item = localReels.find(r => r.id === reelId);
+    
+    // Mark as deleted immediately
+    setDeletedIds(prev => new Set(prev).add(String(reelId)));
+    toast.success(`${item?.title} deleted! 🗑️`);
+    setDeleteConfirmId(null);
+
+    // Delete in backend (404 errors are handled silently by API)
     try {
-      const item = reels.find(r => r.id === reelId);
       await deleteContent(reelId);
-      toast.success(`${item?.title} deleted! 🗑️`);
-      setDeleteConfirmId(null);
     } catch (error) {
+      // Only revert on real errors (404 won't throw)
+      setDeletedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(String(reelId));
+        return newSet;
+      });
       toast.error('Failed to delete reel');
     }
   };
@@ -236,7 +321,7 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole }: Re
             Manage your Instagram Reels workflow
           </p>
         </div>
-        <Button onClick={handleAddReel}>
+        <Button onClick={handleOpenAddModal}>
           <Plus size={18} className="mr-2" />
           Add Reel
         </Button>
@@ -278,14 +363,14 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole }: Re
               </tr>
             </thead>
             <tbody>
-              {reels.length === 0 ? (
+              {localReels.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
                     No reels yet. Click &quot;Add Reel&quot; to create one.
                   </td>
                 </tr>
               ) : (
-                reels.map((item) => {
+                localReels.map((item) => {
                   const statusInfo = getStatusBadge(item.status);
                   
                   return (
@@ -461,6 +546,103 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole }: Re
           </div>
         </Modal>
       )}
+
+      {/* Add Reel Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => !submitting && setIsAddModalOpen(false)}
+        title="Add New Reel"
+        footer={
+          <>
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsAddModalOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitAdd}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                'Create Reel'
+              )}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Reel Title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="Enter reel title"
+            required
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Priority"
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value as Content['priority'] })}
+              options={[
+                { value: 'low', label: 'Low' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'high', label: 'High' },
+                { value: 'urgent', label: 'Urgent' },
+              ]}
+            />
+
+            <Select
+              label="Status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as Content['status'] })}
+              options={[
+                { value: 'idea', label: 'Idea' },
+                { value: 'in-progress', label: 'In Progress' },
+                { value: 'review', label: 'Review' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'published', label: 'Published' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Start Date"
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              required
+            />
+
+            <Input
+              label="Due Date"
+              type="date"
+              value={formData.dueDate}
+              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              min={formData.startDate}
+              required
+            />
+          </div>
+
+          <Select
+            label="Assign To"
+            value={formData.assignedTo}
+            onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+            options={users.map(u => ({ 
+              value: u.id, 
+              label: u.name 
+            }))}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

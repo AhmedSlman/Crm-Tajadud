@@ -16,14 +16,16 @@ import { toast } from 'sonner';
 type CampaignContentProps = {
   campaigns: Campaign[];
   projectId: string;
+  onRefresh?: () => void;
 };
 
-export default function CampaignContent({ campaigns, projectId }: CampaignContentProps) {
+export default function CampaignContent({ campaigns, projectId, onRefresh }: CampaignContentProps) {
   const { addCampaign, updateCampaign, deleteCampaign, users } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     type: 'facebook-ads' as Campaign['type'],
@@ -41,10 +43,11 @@ export default function CampaignContent({ campaigns, projectId }: CampaignConten
       return;
     }
 
+    setSubmitting(true);
     try {
       await addCampaign({
         name: formData.name,
-        projectId,
+        projectId: String(projectId),
         type: formData.type,
         objective: formData.objective,
         startDate: formData.startDate,
@@ -71,8 +74,15 @@ export default function CampaignContent({ campaigns, projectId }: CampaignConten
         status: 'planned',
         responsiblePerson: users[0]?.id || '',
       });
+      
+      // Refresh project data
+      if (onRefresh) onRefresh();
     } catch (error) {
-      toast.error('Failed to create campaign');
+      toast.error('Failed to create campaign', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -89,6 +99,7 @@ export default function CampaignContent({ campaigns, projectId }: CampaignConten
       return;
     }
 
+    setSubmitting(true);
     try {
       await updateCampaign(editingCampaign.id, {
         name: editingCampaign.name,
@@ -104,8 +115,15 @@ export default function CampaignContent({ campaigns, projectId }: CampaignConten
       toast.success('Campaign updated! ✅');
       setIsEditModalOpen(false);
       setEditingCampaign(null);
+      
+      // Refresh project data
+      if (onRefresh) onRefresh();
     } catch (error) {
-      toast.error('Failed to update campaign');
+      toast.error('Failed to update campaign', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -115,6 +133,9 @@ export default function CampaignContent({ campaigns, projectId }: CampaignConten
       await deleteCampaign(campaignId);
       toast.success(`${campaign?.name} deleted! 🗑️`);
       setDeleteConfirmId(null);
+      
+      // Refresh project data
+      if (onRefresh) onRefresh();
     } catch (error) {
       toast.error('Failed to delete campaign');
     }
