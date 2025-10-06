@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import Image from 'next/image';
-import Logo from '@/assets/dqdddd 1.svg';
+import Logo from '@/assets/dqdddd.svg';
+import StockPattern from '@/assets/stock.svg';
 import { Building2, Lock, Mail, Eye, EyeOff, AlertCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { ClientUser } from '@/types';
@@ -55,7 +56,7 @@ export default function ClientLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#0c081e] via-[#1a0f3d] to-[#0c081e]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#0c081e] via-[#1a0f3d] to-[#0c081e] relative">
       {/* Floating background particles effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -66,18 +67,24 @@ export default function ClientLoginPage() {
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
         {/* Left Side - Branding */}
         <div className="flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-6 p-8">
-          <div className="flex items-center justify-center mb-4">
-            <Image 
-              src={Logo} 
-              alt="Company Logo" 
-              width={250} 
-              height={100}
-              className="object-contain"
-              priority
-            />
+          <div className="flex items-center justify-center mb-4 group">
+            <div className="relative">
+              <Image 
+                src={Logo} 
+                alt="Company Logo" 
+                width={480} 
+                height={70}
+                quality={100}
+                className="object-contain w-[240px] h-auto transition-all duration-700 group-hover:scale-110 animate-fadeIn filter drop-shadow-[0_0_25px_rgba(124,95,220,0.5)]"
+                priority
+                unoptimized
+              />
+              {/* Animated glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#563EB7]/30 to-[#7c5fdc]/30 blur-2xl opacity-50 group-hover:opacity-100 transition-all duration-700 -z-10 animate-pulse" />
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#563EB7] to-[#8B5CF6] rounded-xl flex items-center justify-center">
+          <div className="flex items-center gap-3 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+            <div className="w-12 h-12 bg-gradient-to-br from-[#563EB7] to-[#8B5CF6] rounded-xl flex items-center justify-center shadow-lg shadow-[#563EB7]/50">
               <Building2 className="text-white" size={24} />
             </div>
             <div>

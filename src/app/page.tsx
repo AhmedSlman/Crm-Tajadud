@@ -5,6 +5,8 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Card from '@/components/Card';
 import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
+import Image from 'next/image';
+import StockPattern from '@/assets/stock.svg';
 import { Users, FolderKanban, CheckSquare, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 
@@ -85,7 +87,7 @@ function DashboardContent() {
   return (
     <div className="space-y-6 relative">
       {/* Header with gradient */}
-      <div className="relative">
+      <div className="relative z-10">
         <div className="absolute -inset-1 bg-gradient-to-r from-[#563EB7]/20 via-[#7c5fdc]/20 to-[#563EB7]/20 blur-3xl -z-10" />
         <div className="relative">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2">
@@ -105,9 +107,18 @@ function DashboardContent() {
                 className="relative bg-gradient-to-br from-[#14102a] to-[#1a1333] border border-[#563EB7]/20 rounded-xl p-6 
                            shadow-lg shadow-black/20 transition-all duration-500 
                            hover:shadow-2xl hover:shadow-[#563EB7]/20 hover:border-[#563EB7]/40 hover:-translate-y-2
-                           animate-fadeIn"
+                           animate-fadeIn overflow-hidden"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
+                {/* Stock Pattern in Card */}
+                <div className="absolute inset-0 opacity-[0.12]" style={{ 
+                  backgroundImage: `url(${StockPattern.src})`,
+                  backgroundSize: '180px 180px',
+                  backgroundRepeat: 'repeat',
+                  backgroundPosition: 'center',
+                  filter: 'brightness(2) contrast(1.5)'
+                }} />
+                
                 {/* Animated gradient overlay */}
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#563EB7]/0 via-[#563EB7]/0 to-[#563EB7]/0 
                                group-hover:from-[#563EB7]/10 group-hover:via-[#563EB7]/5 group-hover:to-transparent 
@@ -161,9 +172,18 @@ function DashboardContent() {
                              border border-[#563EB7]/10 hover:border-[#563EB7]/30
                              shadow-md hover:shadow-xl hover:shadow-[#563EB7]/10
                              transition-all duration-300 hover:-translate-y-1
-                             animate-slideIn"
+                             animate-slideIn overflow-hidden"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
+                  {/* Stock Pattern in Card */}
+                  <div className="absolute inset-0 opacity-[0.1]" style={{ 
+                    backgroundImage: `url(${StockPattern.src})`,
+                    backgroundSize: '160px 160px',
+                    backgroundRepeat: 'repeat',
+                    backgroundPosition: 'center',
+                    filter: 'brightness(2) contrast(1.5)'
+                  }} />
+                  
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#563EB7]/0 to-[#563EB7]/0 
                                 group-hover:from-[#563EB7]/5 group-hover:to-transparent 
@@ -214,9 +234,18 @@ function DashboardContent() {
                              border border-[#563EB7]/10 hover:border-[#563EB7]/30
                              shadow-md hover:shadow-xl hover:shadow-[#563EB7]/10
                              transition-all duration-300 hover:-translate-y-1
-                             animate-slideIn"
+                             animate-slideIn overflow-hidden"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
+                  {/* Stock Pattern in Card */}
+                  <div className="absolute inset-0 opacity-[0.1]" style={{ 
+                    backgroundImage: `url(${StockPattern.src})`,
+                    backgroundSize: '160px 160px',
+                    backgroundRepeat: 'repeat',
+                    backgroundPosition: 'center',
+                    filter: 'brightness(2) contrast(1.5)'
+                  }} />
+                  
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#563EB7]/0 to-[#563EB7]/0 
                                 group-hover:from-[#563EB7]/5 group-hover:to-transparent 

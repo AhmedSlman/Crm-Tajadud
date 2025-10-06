@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Image from 'next/image';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Badge from '@/components/Badge';
 import ProgressBar from '@/components/ProgressBar';
 import Select from '@/components/Select';
+import { getAvatarUrl } from '@/lib/config';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -294,7 +294,11 @@ export default function ReportsPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center overflow-hidden">
                     {member.user.avatar ? (
-                      <Image src={member.user.avatar} alt={member.user.name} width={40} height={40} className="rounded-full" />
+                      <img 
+                        src={getAvatarUrl(member.user.avatar)} 
+                        alt={member.user.name} 
+                        className="w-full h-full object-cover rounded-full" 
+                      />
                     ) : (
                       <Users size={20} className="text-white" />
                     )}

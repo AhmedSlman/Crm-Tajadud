@@ -47,16 +47,22 @@ export default function Sidebar() {
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#563EB7]/5 via-transparent to-[#7c5fdc]/5 opacity-50" />
       
-      <div className="relative z-10 p-6 border-b border-[#563EB7]/20">
-        <div className="flex items-center justify-center">
-          <Image 
-            src={Logo} 
-            alt="Company Logo" 
-            width={180} 
-            height={60}
-            className="object-contain"
-            priority
-          />
+      <div className="relative z-10 px-6 py-3 border-b border-[#563EB7]/20">
+        <div className="flex items-center justify-center group">
+          <div className="relative">
+            <Image 
+              src={Logo} 
+              alt="Company Logo" 
+              width={300} 
+              height={36}
+              quality={100}
+              className="object-contain w-[150px] h-auto transition-all duration-500 group-hover:scale-105 filter drop-shadow-[0_0_15px_rgba(124,95,220,0.3)]"
+              priority
+              unoptimized
+            />
+            {/* Glow effect on hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#563EB7]/20 to-[#7c5fdc]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
+          </div>
         </div>
       </div>
       

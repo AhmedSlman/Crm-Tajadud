@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { ClientUser, Project, Task, Content, Campaign } from '@/types';
 import api from '@/lib/api';
+import { getAvatarUrl } from '@/lib/config';
 
 export default function ClientProjectDetailPage() {
   const router = useRouter();
@@ -183,11 +184,17 @@ export default function ClientProjectDetailPage() {
                 <div className="bg-[#1a1333] rounded-lg p-4">
                   <p className="text-sm text-gray-400 mb-2">Project Manager</p>
                   <div className="flex items-center gap-3">
-                    <img
-                      src={projectManager.avatar || ''}
-                      alt={projectManager.name}
-                      className="w-8 h-8 rounded-full"
-                    />
+                    {projectManager.avatar ? (
+                      <img
+                        src={getAvatarUrl(projectManager.avatar)}
+                        alt={projectManager.name}
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-br from-[#563EB7] to-[#8B5CF6] rounded-full flex items-center justify-center">
+                        <Users size={16} className="text-white" />
+                      </div>
+                    )}
                     <div>
                       <p className="text-white font-medium">{projectManager.name}</p>
                       <p className="text-xs text-gray-400">{projectManager.role}</p>

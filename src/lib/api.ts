@@ -463,6 +463,37 @@ export const clientsAPI = {
 
     return handleResponse(response);
   },
+
+  // إنشاء Client User (حساب دخول للعميل)
+  async createUser(clientId: string, userData: { name: string; email: string; password: string; phone?: string }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/clients/${clientId}/users`, {
+      method: 'POST',
+      headers: createHeaders(),
+      body: JSON.stringify(userData),
+    });
+
+    return handleResponse(response);
+  },
+
+  // الحصول على Client Users
+  async getUsers(clientId: string): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/clients/${clientId}/users`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+  // حذف Client User
+  async deleteUser(clientId: string, userId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/clients/${clientId}/users/${userId}`, {
+      method: 'DELETE',
+      headers: createHeaders(),
+    });
+
+    await handleResponse(response);
+  },
 };
 
 // Projects API

@@ -20,7 +20,7 @@ import {
   BarChart3,
   Users,
   Target,
-  Zap,
+  Zap, 
   ArrowRight,
   ExternalLink
 } from 'lucide-react';
@@ -168,13 +168,13 @@ export default function ClientDashboardPage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-[#563EB7]/10">
-                      {notifications.map((notif) => (
+                      {notifications.map((notif, index) => (
                         <div
-                          key={notif.id}
+                          key={notif.id || `notif-${index}`}
                           className={`p-4 hover:bg-[#563EB7]/10 cursor-pointer ${
                             !notif.read ? 'bg-[#563EB7]/5' : ''
                           }`}
-                          onClick={() => markNotificationAsRead(notif.id)}
+                          onClick={() => markNotificationAsRead(notif.id || index.toString())}
                         >
                           <div className="flex items-start gap-3">
                             {getNotificationIcon(notif.type)}
@@ -182,7 +182,7 @@ export default function ClientDashboardPage() {
                               <h4 className="font-medium text-white text-sm">{notif.title}</h4>
                               <p className="text-gray-400 text-xs mt-1">{notif.message}</p>
                               <p className="text-gray-500 text-xs mt-2">
-                                {new Date(notif.createdAt).toLocaleDateString()}
+                                {notif.date ? new Date(notif.date).toLocaleDateString() : 'N/A'}
                               </p>
                             </div>
                             {!notif.read && (
@@ -284,7 +284,7 @@ export default function ClientDashboardPage() {
                   <Target className="text-purple-400" size={24} />
                 </div>
                 <span className="text-2xl font-bold text-white">
-                  {clientProjects.reduce((sum, p) => sum + p.activeCampaigns, 0)}
+                  {clientProjects.reduce((sum, p) => sum + (p.activeCampaigns || 0), 0)}
                 </span>
               </div>
               <h3 className="font-semibold text-white mb-1">Active Campaigns</h3>
@@ -299,7 +299,7 @@ export default function ClientDashboardPage() {
                   <Zap className="text-orange-400" size={24} />
                 </div>
                 <span className="text-2xl font-bold text-white">
-                  {clientProjects.reduce((sum, p) => sum + p.publishedContent, 0)}
+                  {clientProjects.reduce((sum, p) => sum + (p.publishedContent || 0), 0)}
                 </span>
               </div>
               <h3 className="font-semibold text-white mb-1">Published Content</h3>
@@ -425,13 +425,13 @@ export default function ClientDashboardPage() {
 
           <Card title="Recent Activity" hover={false}>
             <div className="p-6">
-              {notifications.slice(0, 3).map((notif) => (
-                <div key={notif.id} className="flex items-start gap-3 mb-3 last:mb-0">
+              {notifications.slice(0, 3).map((notif, index) => (
+                <div key={notif.id || `notif-${index}`} className="flex items-start gap-3 mb-3 last:mb-0">
                   {getNotificationIcon(notif.type)}
                   <div className="flex-1">
                     <p className="text-sm text-white font-medium">{notif.title}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {new Date(notif.createdAt).toLocaleDateString()}
+                      {notif.date ? new Date(notif.date).toLocaleDateString() : 'N/A'}
                     </p>
                   </div>
                 </div>

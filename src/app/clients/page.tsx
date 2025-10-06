@@ -10,17 +10,29 @@ import Input, { Textarea } from '@/components/Input';
 import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
 import LoadingState, { LoadingSpinner } from '@/components/LoadingState';
-import { Plus, Pencil, Trash2, Mail, Phone, Building, Download, Users as UsersIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Phone, Building, Download, Users as UsersIcon, UserPlus, Key } from 'lucide-react';
 import { Client } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
 import { toast } from 'sonner';
+import api from '@/lib/api';
 
 export default function ClientsPage() {
   const { clients, addClient, updateClient, deleteClient, projects, loading, currentUser, canPerformAction } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clientUsers, setClientUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+  });
   
   // Local state for optimistic updates
   const [localClients, setLocalClients] = useState<Client[]>(clients);
@@ -38,6 +50,73 @@ export default function ClientsPage() {
     company: '',
     notes: '',
   });
+
+  // Open Client Users Modal
+  const handleOpenUsersModal = async (client: Client) => {
+    setSelectedClient(client);
+    setIsUsersModalOpen(true);
+    setLoadingUsers(true);
+    
+    try {
+      const users = await api.clients.getUsers(client.id);
+      setClientUsers(users);
+    } catch (error) {
+      console.error('Error loading client users:', error);
+      toast.error('Failed to load client users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Open Add User Modal
+  const handleOpenAddUserModal = () => {
+    setUserFormData({
+      name: '',
+      email: '',
+      password: '',
+      phone: '',
+    });
+    setIsAddUserModalOpen(true);
+  };
+
+  // Create Client User
+  const handleCreateUser = async () => {
+    if (!userFormData.name || !userFormData.email || !userFormData.password) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    setSubmitting(true);
+    
+    try {
+      const result = await api.clients.createUser(selectedClient!.id, userFormData);
+      toast.success('Client user created successfully! 🎉', {
+        description: `Login: ${result.login_credentials?.email || userFormData.email}`,
+      });
+      setIsAddUserModalOpen(false);
+      // Refresh users list
+      handleOpenUsersModal(selectedClient!);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create user');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete Client User
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user? They will lose access to the portal.')) {
+      return;
+    }
+
+    try {
+      await api.clients.deleteUser(selectedClient!.id, userId);
+      toast.success('User deleted successfully');
+      setClientUsers(clientUsers.filter(u => u.id !== userId));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete user');
+    }
+  };
 
   const handleOpenModal = (client?: Client) => {
     if (client) {
@@ -267,6 +346,14 @@ export default function ClientsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenUsersModal(client)}
+                        title="Manage Portal Users"
+                      >
+                        <Key size={16} className="text-blue-400" />
+                      </Button>
                       {canPerformAction(currentUser?.role, 'clients', 'update') && (
                         <Button
                           size="sm"
@@ -364,6 +451,154 @@ export default function ClientsPage() {
             placeholder="Additional notes about the client..."
             rows={4}
           />
+        </div>
+      </Modal>
+
+      {/* Client Users Modal */}
+      <Modal
+        isOpen={isUsersModalOpen}
+        onClose={() => setIsUsersModalOpen(false)}
+        title={`Portal Users - ${selectedClient?.name}`}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-gray-400 text-sm">
+              Manage login accounts for {selectedClient?.company}
+            </p>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleOpenAddUserModal}
+            >
+              <UserPlus size={16} className="mr-2" />
+              Add User
+            </Button>
+          </div>
+
+          {loadingUsers ? (
+            <div className="text-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : clientUsers.length === 0 ? (
+            <div className="text-center py-8">
+              <Key size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">No Portal Users</h3>
+              <p className="text-gray-400 mb-4">
+                Create a login account for this client to access their projects
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {clientUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between p-4 bg-[#1a1333] rounded-lg border border-[#563EB7]/20"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#8B5CF6] rounded-full flex items-center justify-center">
+                      <UsersIcon size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">{user.name}</h4>
+                      <div className="flex items-center gap-4 mt-1">
+                        <span className="text-sm text-gray-400 flex items-center gap-1">
+                          <Mail size={12} />
+                          {user.email}
+                        </span>
+                        {user.phone && (
+                          <span className="text-sm text-gray-400 flex items-center gap-1">
+                            <Phone size={12} />
+                            {user.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDeleteUser(user.id)}
+                  >
+                    <Trash2 size={16} className="text-red-400" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Add Client User Modal */}
+      <Modal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        title="Create Portal Login"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
+            <p className="text-blue-300 text-sm">
+              🔐 This will create a login account for the client to access their projects via the Client Portal
+            </p>
+          </div>
+
+          <Input
+            label="Name *"
+            value={userFormData.name}
+            onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+            placeholder="Enter full name"
+          />
+          <Input
+            label="Email *"
+            type="email"
+            value={userFormData.email}
+            onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+            placeholder="user@example.com"
+          />
+          <Input
+            label="Password *"
+            type="password"
+            value={userFormData.password}
+            onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+            placeholder="Minimum 6 characters"
+          />
+          <Input
+            label="Phone (Optional)"
+            value={userFormData.phone}
+            onChange={(e) => setUserFormData({ ...userFormData, phone: e.target.value })}
+            placeholder="+1 234 567 8900"
+          />
+
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mt-4">
+            <p className="text-yellow-300 text-sm">
+              ⚠️ Make sure to share the login credentials with the client securely
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="secondary"
+              onClick={() => setIsAddUserModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateUser}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <LoadingSpinner />
+                  <span className="ml-2">Creating...</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus size={16} className="mr-2" />
+                  Create User
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>
