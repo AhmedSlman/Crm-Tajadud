@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function ProjectsPage() {
-  const { projects, clients, users, activeUsers, addProject, updateProject, deleteProject, loading } = useData();
+  const { projects, clients, users, activeUsers, addProject, updateProject, deleteProject, loading, currentUser, canPerformAction } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,10 +181,12 @@ export default function ProjectsPage() {
             <Download size={20} className="mr-2" />
             Export
           </Button>
-          <Button onClick={() => handleOpenModal()}>
-            <Plus size={20} className="mr-2" />
-            New Project
-          </Button>
+          {canPerformAction(currentUser?.role, 'projects', 'create') && (
+            <Button onClick={() => handleOpenModal()}>
+              <Plus size={20} className="mr-2" />
+              New Project
+            </Button>
+          )}
         </div>
       </div>
 

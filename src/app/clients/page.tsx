@@ -16,7 +16,7 @@ import { exportToCSV, searchInObject } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function ClientsPage() {
-  const { clients, addClient, updateClient, deleteClient, projects, loading } = useData();
+  const { clients, addClient, updateClient, deleteClient, projects, loading, currentUser, canPerformAction } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,10 +182,12 @@ export default function ClientsPage() {
             <Download size={20} className="mr-2" />
             Export
           </Button>
-          <Button onClick={() => handleOpenModal()}>
-            <Plus size={20} className="mr-2" />
-            Add Client
-          </Button>
+          {canPerformAction(currentUser?.role, 'clients', 'create') && (
+            <Button onClick={() => handleOpenModal()}>
+              <Plus size={20} className="mr-2" />
+              Add Client
+            </Button>
+          )}
         </div>
       </div>
 
@@ -265,20 +267,24 @@ export default function ClientsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleOpenModal(client)}
-                      >
-                        <Pencil size={16} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(client.id)}
-                      >
-                        <Trash2 size={16} className="text-red-400" />
-                      </Button>
+                      {canPerformAction(currentUser?.role, 'clients', 'update') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenModal(client)}
+                        >
+                          <Pencil size={16} />
+                        </Button>
+                      )}
+                      {canPerformAction(currentUser?.role, 'clients', 'delete') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(client.id)}
+                        >
+                          <Trash2 size={16} className="text-red-400" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

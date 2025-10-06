@@ -15,7 +15,7 @@ import { Campaign } from '@/types';
 import { toast } from 'sonner';
 
 export default function CampaignsPage() {
-  const { campaigns, projects, users, activeUsers, addCampaign, updateCampaign, deleteCampaign, loading } = useData();
+  const { campaigns, projects, users, activeUsers, addCampaign, updateCampaign, deleteCampaign, loading, currentUser, canPerformAction } = useData();
   const [localCampaigns, setLocalCampaigns] = useState<Campaign[]>(campaigns);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
@@ -142,10 +142,12 @@ export default function CampaignsPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Campaigns</h1>
           <p className="text-gray-400">Manage your marketing campaigns</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={20} className="mr-2" />
-          New Campaign
-        </Button>
+        {canPerformAction(currentUser?.role, 'campaigns', 'create') && (
+          <Button onClick={() => handleOpenModal()}>
+            <Plus size={20} className="mr-2" />
+            New Campaign
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -206,13 +208,17 @@ export default function CampaignsPage() {
                 )}
 
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => handleOpenModal(campaign)} className="flex-1">
-                    <Pencil size={14} className="mr-1" />
-                    Edit
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(campaign.id)}>
-                    <Trash2 size={14} className="text-red-400" />
-                  </Button>
+                  {canPerformAction(currentUser?.role, 'campaigns', 'update') && (
+                    <Button size="sm" variant="secondary" onClick={() => handleOpenModal(campaign)} className="flex-1">
+                      <Pencil size={14} className="mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                  {canPerformAction(currentUser?.role, 'campaigns', 'delete') && (
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(campaign.id)}>
+                      <Trash2 size={14} className="text-red-400" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>

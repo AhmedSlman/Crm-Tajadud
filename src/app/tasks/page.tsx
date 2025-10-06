@@ -18,7 +18,7 @@ import { Task } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
 
 export default function TasksPage() {
-  const { tasks, projects, users, activeUsers, addTask, updateTask, deleteTask, currentUser } = useData();
+  const { tasks, projects, users, activeUsers, addTask, updateTask, deleteTask, currentUser, canPerformAction } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -205,10 +205,12 @@ export default function TasksPage() {
             <Download size={20} className="mr-2" />
             Export
           </Button>
-          <Button onClick={() => handleOpenModal()}>
-            <Plus size={20} className="mr-2" />
-            New Task
-          </Button>
+          {canPerformAction(currentUser?.role, 'tasks', 'create') && (
+            <Button onClick={() => handleOpenModal()}>
+              <Plus size={20} className="mr-2" />
+              New Task
+            </Button>
+          )}
         </div>
       </div>
 
@@ -417,12 +419,16 @@ export default function TasksPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => handleOpenModal(task)}>
-                        <Pencil size={14} />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(task.id)}>
-                        <Trash2 size={14} className="text-red-400" />
-                      </Button>
+                      {canPerformAction(currentUser?.role, 'tasks', 'update') && (
+                        <Button size="sm" variant="ghost" onClick={() => handleOpenModal(task)}>
+                          <Pencil size={14} />
+                        </Button>
+                      )}
+                      {canPerformAction(currentUser?.role, 'tasks', 'delete') && (
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(task.id)}>
+                          <Trash2 size={14} className="text-red-400" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

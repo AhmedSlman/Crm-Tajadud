@@ -14,7 +14,7 @@ import { Plus, Pencil, Trash2, FileText, Calendar, User, Filter } from 'lucide-r
 import { Content } from '@/types';
 
 export default function ContentPage() {
-  const { content, projects, campaigns, users, activeUsers, addContent, updateContent, deleteContent } = useData();
+  const { content, projects, campaigns, users, activeUsers, addContent, updateContent, deleteContent, currentUser, canPerformAction } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -121,10 +121,12 @@ export default function ContentPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Content Planning</h1>
           <p className="text-gray-400">Plan and manage your content</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={20} className="mr-2" />
-          New Content
-        </Button>
+        {canPerformAction(currentUser?.role, 'content', 'create') && (
+          <Button onClick={() => handleOpenModal()}>
+            <Plus size={20} className="mr-2" />
+            New Content
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -203,12 +205,16 @@ export default function ContentPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => handleOpenModal(contentItem)}>
-                        <Pencil size={14} />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(contentItem.id)}>
-                        <Trash2 size={14} className="text-red-400" />
-                      </Button>
+                      {canPerformAction(currentUser?.role, 'content', 'update') && (
+                        <Button size="sm" variant="ghost" onClick={() => handleOpenModal(contentItem)}>
+                          <Pencil size={14} />
+                        </Button>
+                      )}
+                      {canPerformAction(currentUser?.role, 'content', 'delete') && (
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(contentItem.id)}>
+                          <Trash2 size={14} className="text-red-400" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
