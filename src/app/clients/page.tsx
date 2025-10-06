@@ -11,7 +11,7 @@ import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
 import LoadingState, { LoadingSpinner } from '@/components/LoadingState';
 import { Plus, Pencil, Trash2, Mail, Phone, Building, Download, Users as UsersIcon, UserPlus, Key } from 'lucide-react';
-import { Client } from '@/types';
+import { Client, ClientUser } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
 import { toast } from 'sonner';
 import api from '@/lib/api';
@@ -23,7 +23,7 @@ export default function ClientsPage() {
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [clientUsers, setClientUsers] = useState<any[]>([]);
+  const [clientUsers, setClientUsers] = useState<Array<{ id: string; name: string; email: string; phone?: string }>>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +91,7 @@ export default function ClientsPage() {
     try {
       const result = await api.clients.createUser(selectedClient!.id, userFormData);
       toast.success('Client user created successfully! 🎉', {
-        description: `Login: ${result.login_credentials?.email || userFormData.email}`,
+        description: `Login: ${(result as ClientUser & { login_credentials?: { email: string } }).login_credentials?.email || userFormData.email}`,
       });
       setIsAddUserModalOpen(false);
       // Refresh users list

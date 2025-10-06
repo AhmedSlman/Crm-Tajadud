@@ -53,9 +53,9 @@ export default function ProfilePage() {
       
       // Reload page to update everywhere
       setTimeout(() => window.location.reload(), 1000);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast.error(error.message || 'Failed to upload profile picture');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload profile picture');
       setAvatarPreview(user?.avatar || '');
     } finally {
       setUploading(false);
@@ -78,9 +78,9 @@ export default function ProfilePage() {
       
       toast.success('Profile picture removed');
       setTimeout(() => window.location.reload(), 1000);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting avatar:', error);
-      toast.error(error.message || 'Failed to remove profile picture');
+      toast.error(error instanceof Error ? error.message : 'Failed to remove profile picture');
     } finally {
       setUploading(false);
     }
@@ -197,7 +197,7 @@ export default function ProfilePage() {
                 <Phone size={16} />
                 <span className="text-sm font-medium">Phone</span>
               </div>
-              <p className="text-white font-semibold">{(user as any)?.phone || 'Not provided'}</p>
+              <p className="text-white font-semibold">{user && 'phone' in user ? (user as { phone?: string }).phone || 'Not provided' : 'Not provided'}</p>
             </div>
 
             <div>

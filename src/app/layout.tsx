@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Marketing Agency CRM",
-  description: "Comprehensive CRM system for marketing agencies",
+  title: "Tajadud - CRM System",
+  description: "Professional CRM system for digital marketing and content management",
 };
 
 export default function RootLayout({

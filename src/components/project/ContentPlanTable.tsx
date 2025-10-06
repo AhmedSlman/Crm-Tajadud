@@ -246,7 +246,7 @@ export default function ContentPlanTable({
 
     // Update in backend
     try {
-      const updates: any = { status: newStatus as Content['status'] };
+      const updates: { status: Content['status']; readyForCalendar?: boolean } = { status: newStatus as Content['status'] };
       if (shouldClearReady) {
         updates.readyForCalendar = false;
       }

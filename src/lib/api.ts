@@ -1,16 +1,16 @@
 // API Client للتعامل مع Laravel Backend
-import { AuthUser, LoginCredentials, RegisterData, ClientUser } from '@/types';
+import { AuthUser, LoginCredentials, RegisterData, ClientUser, User, Client, Project, Task, Campaign, Content, ClientProjectView, ClientNotification } from '@/types';
 import config from './config';
 
 const API_BASE_URL = config.api.baseUrl;
 
 // Helper function للتحويل من camelCase إلى snake_case
-const toSnakeCase = (obj: any): any => {
+const toSnakeCase = (obj: unknown): unknown => {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(toSnakeCase);
   
-  const snakeObj: any = {};
+  const snakeObj: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     // Skip undefined values
     if (value === undefined) continue;
@@ -250,7 +250,7 @@ export const authAPI = {
   },
 
   // تحديث الملف الشخصي
-  async updateProfile(profileData: any, isClient = false): Promise<{ message: string; user: AuthUser | ClientUser }> {
+  async updateProfile(profileData: Partial<User | ClientUser>, isClient = false): Promise<{ message: string; user: AuthUser | ClientUser }> {
     const response = await fetch(`${API_BASE_URL}/auth/profile`, {
       method: 'PUT',
       headers: createHeaders(isClient),
@@ -285,7 +285,7 @@ export const authAPI = {
   },
 
   // إحصائيات المصادقة (للأدمن فقط)
-  async getAuthStats(): Promise<any> {
+  async getAuthStats(): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}/auth/stats`, {
       method: 'GET',
       headers: createHeaders(),
@@ -298,7 +298,7 @@ export const authAPI = {
 // Users API
 export const usersAPI = {
   // الحصول على جميع المستخدمين
-  async getAll(): Promise<any[]> {
+  async getAll(): Promise<User[]> {
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: 'GET',
       headers: createHeaders(),
@@ -308,7 +308,7 @@ export const usersAPI = {
   },
 
   // الحصول على مستخدم بالـ ID
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users/${id}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -318,7 +318,7 @@ export const usersAPI = {
   },
 
   // إنشاء مستخدم جديد
-  async create(userData: any): Promise<any> {
+  async create(userData: Partial<User>): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: 'POST',
       headers: createHeaders(),
@@ -329,7 +329,7 @@ export const usersAPI = {
   },
 
   // تحديث مستخدم
-  async update(id: string, userData: any): Promise<any> {
+  async update(id: string, userData: Partial<User>): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -350,7 +350,7 @@ export const usersAPI = {
   },
 
   // الحصول على المستخدمين المعلقين
-  async getPending(): Promise<any[]> {
+  async getPending(): Promise<User[]> {
     const response = await fetch(`${API_BASE_URL}/users/pending`, {
       method: 'GET',
       headers: createHeaders(),
@@ -360,7 +360,7 @@ export const usersAPI = {
   },
 
   // الموافقة على مستخدم
-  async approve(id: string): Promise<any> {
+  async approve(id: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users/${id}/approve`, {
       method: 'POST',
       headers: createHeaders(),
@@ -370,7 +370,7 @@ export const usersAPI = {
   },
 
   // رفض مستخدم
-  async reject(id: string): Promise<any> {
+  async reject(id: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users/${id}/reject`, {
       method: 'POST',
       headers: createHeaders(),
@@ -380,7 +380,7 @@ export const usersAPI = {
   },
 
   // تعليق مستخدم
-  async suspend(id: string): Promise<any> {
+  async suspend(id: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users/${id}/suspend`, {
       method: 'POST',
       headers: createHeaders(),
@@ -390,7 +390,7 @@ export const usersAPI = {
   },
 
   // تفعيل مستخدم
-  async activate(id: string): Promise<any> {
+  async activate(id: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/users/${id}/activate`, {
       method: 'POST',
       headers: createHeaders(),
@@ -403,7 +403,7 @@ export const usersAPI = {
 // Clients API
 export const clientsAPI = {
   // الحصول على جميع العملاء
-  async getAll(): Promise<any[]> {
+  async getAll(): Promise<Client[]> {
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'GET',
       headers: createHeaders(),
@@ -413,7 +413,7 @@ export const clientsAPI = {
   },
 
   // الحصول على عميل بالـ ID
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<Client> {
     const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -423,7 +423,7 @@ export const clientsAPI = {
   },
 
   // إنشاء عميل جديد
-  async create(clientData: any): Promise<any> {
+  async create(clientData: Partial<Client>): Promise<Client> {
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
       headers: createHeaders(),
@@ -434,7 +434,7 @@ export const clientsAPI = {
   },
 
   // تحديث عميل
-  async update(id: string, clientData: any): Promise<any> {
+  async update(id: string, clientData: Partial<Client>): Promise<Client> {
     const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -455,7 +455,7 @@ export const clientsAPI = {
   },
 
   // الحصول على مشاريع العميل
-  async getProjects(id: string): Promise<any[]> {
+  async getProjects(id: string): Promise<Project[]> {
     const response = await fetch(`${API_BASE_URL}/clients/${id}/projects`, {
       method: 'GET',
       headers: createHeaders(),
@@ -465,7 +465,7 @@ export const clientsAPI = {
   },
 
   // إنشاء Client User (حساب دخول للعميل)
-  async createUser(clientId: string, userData: { name: string; email: string; password: string; phone?: string }): Promise<any> {
+  async createUser(clientId: string, userData: { name: string; email: string; password: string; phone?: string }): Promise<ClientUser> {
     const response = await fetch(`${API_BASE_URL}/clients/${clientId}/users`, {
       method: 'POST',
       headers: createHeaders(),
@@ -476,7 +476,7 @@ export const clientsAPI = {
   },
 
   // الحصول على Client Users
-  async getUsers(clientId: string): Promise<any[]> {
+  async getUsers(clientId: string): Promise<ClientUser[]> {
     const response = await fetch(`${API_BASE_URL}/clients/${clientId}/users`, {
       method: 'GET',
       headers: createHeaders(),
@@ -499,7 +499,7 @@ export const clientsAPI = {
 // Projects API
 export const projectsAPI = {
   // الحصول على جميع المشاريع
-  async getAll(): Promise<any[]> {
+  async getAll(): Promise<Project[]> {
     const response = await fetch(`${API_BASE_URL}/projects`, {
       method: 'GET',
       headers: createHeaders(),
@@ -509,7 +509,7 @@ export const projectsAPI = {
   },
 
   // الحصول على مشروع بالـ ID
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<Project> {
     const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -519,7 +519,7 @@ export const projectsAPI = {
   },
 
   // إنشاء مشروع جديد
-  async create(projectData: any): Promise<any> {
+  async create(projectData: Partial<Project>): Promise<Project> {
     const response = await fetch(`${API_BASE_URL}/projects`, {
       method: 'POST',
       headers: createHeaders(),
@@ -530,7 +530,7 @@ export const projectsAPI = {
   },
 
   // تحديث مشروع
-  async update(id: string, projectData: any): Promise<any> {
+  async update(id: string, projectData: Partial<Project>): Promise<Project> {
     const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -551,7 +551,7 @@ export const projectsAPI = {
   },
 
   // الحصول على إحصائيات المشروع
-  async getStats(id: string): Promise<any> {
+  async getStats(id: string): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}/projects/${id}/stats`, {
       method: 'GET',
       headers: createHeaders(),
@@ -561,7 +561,7 @@ export const projectsAPI = {
   },
 
   // رفع ملف للمشروع
-  async uploadFile(id: string, file: File, name: string): Promise<any> {
+  async uploadFile(id: string, file: File, name: string): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', name);
@@ -582,7 +582,7 @@ export const projectsAPI = {
 // Tasks API
 export const tasksAPI = {
   // الحصول على جميع المهام
-  async getAll(): Promise<any[]> {
+  async getAll(): Promise<Task[]> {
     const response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'GET',
       headers: createHeaders(),
@@ -592,7 +592,7 @@ export const tasksAPI = {
   },
 
   // الحصول على مهامي
-  async getMyTasks(): Promise<any[]> {
+  async getMyTasks(): Promise<Task[]> {
     const response = await fetch(`${API_BASE_URL}/tasks/my-tasks`, {
       method: 'GET',
       headers: createHeaders(),
@@ -602,7 +602,7 @@ export const tasksAPI = {
   },
 
   // الحصول على مهام المشروع
-  async getProjectTasks(projectId: string): Promise<any[]> {
+  async getProjectTasks(projectId: string): Promise<Task[]> {
     const response = await fetch(`${API_BASE_URL}/tasks/project/${projectId}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -612,7 +612,7 @@ export const tasksAPI = {
   },
 
   // الحصول على مهمة بالـ ID
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<Task> {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -622,7 +622,7 @@ export const tasksAPI = {
   },
 
   // إنشاء مهمة جديدة
-  async create(taskData: any): Promise<any> {
+  async create(taskData: Partial<Task>): Promise<Task> {
     const response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'POST',
       headers: createHeaders(),
@@ -633,7 +633,7 @@ export const tasksAPI = {
   },
 
   // تحديث مهمة
-  async update(id: string, taskData: any): Promise<any> {
+  async update(id: string, taskData: Partial<Task>): Promise<Task> {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -654,7 +654,7 @@ export const tasksAPI = {
   },
 
   // إضافة تعليق للمهمة
-  async addComment(id: string, text: string): Promise<any> {
+  async addComment(id: string, text: string): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}/comments`, {
       method: 'POST',
       headers: createHeaders(),
@@ -665,7 +665,7 @@ export const tasksAPI = {
   },
 
   // إضافة مرفق للمهمة
-  async addAttachment(id: string, file: File): Promise<any> {
+  async addAttachment(id: string, file: File): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -685,7 +685,7 @@ export const tasksAPI = {
 // Campaigns API
 export const campaignsAPI = {
   // الحصول على جميع الحملات
-  async getAll(): Promise<any[]> {
+  async getAll(): Promise<Campaign[]> {
     const response = await fetch(`${API_BASE_URL}/campaigns`, {
       method: 'GET',
       headers: createHeaders(),
@@ -695,7 +695,7 @@ export const campaignsAPI = {
   },
 
   // الحصول على حملات المشروع
-  async getProjectCampaigns(projectId: string): Promise<any[]> {
+  async getProjectCampaigns(projectId: string): Promise<Campaign[]> {
     const response = await fetch(`${API_BASE_URL}/campaigns/project/${projectId}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -705,7 +705,7 @@ export const campaignsAPI = {
   },
 
   // الحصول على حملة بالـ ID
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<Campaign> {
     const response = await fetch(`${API_BASE_URL}/campaigns/${id}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -715,7 +715,7 @@ export const campaignsAPI = {
   },
 
   // إنشاء حملة جديدة
-  async create(campaignData: any): Promise<any> {
+  async create(campaignData: Partial<Campaign>): Promise<Campaign> {
     const response = await fetch(`${API_BASE_URL}/campaigns`, {
       method: 'POST',
       headers: createHeaders(),
@@ -726,7 +726,7 @@ export const campaignsAPI = {
   },
 
   // تحديث حملة
-  async update(id: string, campaignData: any): Promise<any> {
+  async update(id: string, campaignData: Partial<Campaign>): Promise<Campaign> {
     const response = await fetch(`${API_BASE_URL}/campaigns/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -747,7 +747,7 @@ export const campaignsAPI = {
   },
 
   // إضافة KPI للحملة
-  async addKpi(id: string, name: string, value: string): Promise<any> {
+  async addKpi(id: string, name: string, value: string): Promise<Campaign> {
     const response = await fetch(`${API_BASE_URL}/campaigns/${id}/kpis`, {
       method: 'POST',
       headers: createHeaders(),
@@ -758,7 +758,7 @@ export const campaignsAPI = {
   },
 
   // تحديث KPI للحملة
-  async updateKpi(id: string, kpiIndex: number, name: string, value: string): Promise<any> {
+  async updateKpi(id: string, kpiIndex: number, name: string, value: string): Promise<Campaign> {
     const response = await fetch(`${API_BASE_URL}/campaigns/${id}/kpis/${kpiIndex}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -772,7 +772,7 @@ export const campaignsAPI = {
 // Contents API
 export const contentsAPI = {
   // الحصول على جميع المحتوى
-  async getAll(): Promise<any[]> {
+  async getAll(): Promise<Content[]> {
     const response = await fetch(`${API_BASE_URL}/contents`, {
       method: 'GET',
       headers: createHeaders(),
@@ -782,7 +782,7 @@ export const contentsAPI = {
   },
 
   // الحصول على تقويم المحتوى
-  async getCalendar(): Promise<any[]> {
+  async getCalendar(): Promise<Content[]> {
     const response = await fetch(`${API_BASE_URL}/contents/calendar`, {
       method: 'GET',
       headers: createHeaders(),
@@ -792,7 +792,7 @@ export const contentsAPI = {
   },
 
   // الحصول على محتوى المشروع
-  async getProjectContents(projectId: string): Promise<any[]> {
+  async getProjectContents(projectId: string): Promise<Content[]> {
     const response = await fetch(`${API_BASE_URL}/contents/project/${projectId}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -802,7 +802,7 @@ export const contentsAPI = {
   },
 
   // الحصول على محتوى بالـ ID
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<Content> {
     const response = await fetch(`${API_BASE_URL}/contents/${id}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -812,7 +812,7 @@ export const contentsAPI = {
   },
 
   // إنشاء محتوى جديد
-  async create(contentData: any): Promise<any> {
+  async create(contentData: Partial<Content>): Promise<Content> {
     const response = await fetch(`${API_BASE_URL}/contents`, {
       method: 'POST',
       headers: createHeaders(),
@@ -823,7 +823,7 @@ export const contentsAPI = {
   },
 
   // تحديث محتوى
-  async update(id: string, contentData: any): Promise<any> {
+  async update(id: string, contentData: Partial<Content>): Promise<Content> {
     const response = await fetch(`${API_BASE_URL}/contents/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -844,7 +844,7 @@ export const contentsAPI = {
   },
 
   // إضافة تعليق للمحتوى
-  async addComment(id: string, text: string): Promise<any> {
+  async addComment(id: string, text: string): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/contents/${id}/comments`, {
       method: 'POST',
       headers: createHeaders(),
@@ -858,7 +858,7 @@ export const contentsAPI = {
 // Calendar API
 export const calendarAPI = {
   // الحصول على بيانات التقويم
-  async getCalendarData(): Promise<any> {
+  async getCalendarData(): Promise<Content[]> {
     const response = await fetch(`${API_BASE_URL}/calendar`, {
       method: 'GET',
       headers: createHeaders(),
@@ -868,7 +868,7 @@ export const calendarAPI = {
   },
 
   // الحصول على العناصر القادمة
-  async getUpcoming(): Promise<any[]> {
+  async getUpcoming(): Promise<Content[]> {
     const response = await fetch(`${API_BASE_URL}/calendar/upcoming`, {
       method: 'GET',
       headers: createHeaders(),
@@ -878,7 +878,7 @@ export const calendarAPI = {
   },
 
   // الحصول على عناصر تاريخ محدد
-  async getByDate(date: string): Promise<any[]> {
+  async getByDate(date: string): Promise<Content[]> {
     const response = await fetch(`${API_BASE_URL}/calendar/${date}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -891,7 +891,7 @@ export const calendarAPI = {
 // Client Portal API
 export const clientPortalAPI = {
   // لوحة تحكم العميل
-  async getDashboard(): Promise<any> {
+  async getDashboard(): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}/client-portal/dashboard`, {
       method: 'GET',
       headers: createHeaders(true),
@@ -901,7 +901,7 @@ export const clientPortalAPI = {
   },
 
   // مشاريع العميل
-  async getProjects(): Promise<any[]> {
+  async getProjects(): Promise<ClientProjectView[]> {
     const response = await fetch(`${API_BASE_URL}/client-portal/projects`, {
       method: 'GET',
       headers: createHeaders(true),
@@ -911,7 +911,7 @@ export const clientPortalAPI = {
   },
 
   // تفاصيل مشروع العميل
-  async getProject(id: string): Promise<any> {
+  async getProject(id: string): Promise<Project> {
     const response = await fetch(`${API_BASE_URL}/client-portal/projects/${id}`, {
       method: 'GET',
       headers: createHeaders(true),
@@ -921,7 +921,7 @@ export const clientPortalAPI = {
   },
 
   // إشعارات العميل
-  async getNotifications(): Promise<any[]> {
+  async getNotifications(): Promise<ClientNotification[]> {
     const response = await fetch(`${API_BASE_URL}/client-portal/notifications`, {
       method: 'GET',
       headers: createHeaders(true),
@@ -934,7 +934,7 @@ export const clientPortalAPI = {
 // Permissions API
 export const permissionsAPI = {
   // الحصول على جميع الصلاحيات
-  async getAll(): Promise<any[]> {
+  async getAll(): Promise<Array<Record<string, unknown>>> {
     const response = await fetch(`${API_BASE_URL}/permissions`, {
       method: 'GET',
       headers: createHeaders(),
@@ -944,7 +944,7 @@ export const permissionsAPI = {
   },
 
   // الحصول على جميع الأدوار
-  async getAllRoles(): Promise<any> {
+  async getAllRoles(): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}/permissions/roles`, {
       method: 'GET',
       headers: createHeaders(),
@@ -954,7 +954,7 @@ export const permissionsAPI = {
   },
 
   // الحصول على صلاحيات دور معين
-  async getRolePermissions(role: string): Promise<any[]> {
+  async getRolePermissions(role: string): Promise<Array<Record<string, unknown>>> {
     const response = await fetch(`${API_BASE_URL}/permissions/role/${role}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -964,7 +964,7 @@ export const permissionsAPI = {
   },
 
   // تحديث صلاحية واحدة
-  async updatePermission(role: string, column: string, canEdit: boolean): Promise<any> {
+  async updatePermission(role: string, column: string, canEdit: boolean): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/permissions/update`, {
       method: 'POST',
       headers: createHeaders(),
@@ -975,7 +975,7 @@ export const permissionsAPI = {
   },
 
   // تحديث صلاحيات متعددة
-  async bulkUpdate(permissions: Array<{ role: string; column: string; can_edit: boolean }>): Promise<any> {
+  async bulkUpdate(permissions: Array<{ role: string; column: string; can_edit: boolean }>): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/permissions/bulk-update`, {
       method: 'POST',
       headers: createHeaders(),
@@ -986,7 +986,7 @@ export const permissionsAPI = {
   },
 
   // إعادة تعيين للافتراضية
-  async resetToDefault(): Promise<any> {
+  async resetToDefault(): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/permissions/reset`, {
       method: 'POST',
       headers: createHeaders(),
@@ -996,7 +996,7 @@ export const permissionsAPI = {
   },
 
   // إضافة دور مخصص
-  async addCustomRole(roleData: { name: string; label: string; emoji: string; created_by: string }): Promise<any> {
+  async addCustomRole(roleData: { name: string; label: string; emoji: string; created_by: string }): Promise<{ id: string; message: string }> {
     const response = await fetch(`${API_BASE_URL}/permissions/roles`, {
       method: 'POST',
       headers: createHeaders(),
@@ -1007,7 +1007,7 @@ export const permissionsAPI = {
   },
 
   // تحديث دور مخصص
-  async updateCustomRole(id: string, roleData: { label?: string; emoji?: string }): Promise<any> {
+  async updateCustomRole(id: string, roleData: { label?: string; emoji?: string }): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/permissions/roles/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
@@ -1028,7 +1028,7 @@ export const permissionsAPI = {
   },
 
   // الحصول على Matrix كامل
-  async getMatrix(): Promise<any> {
+  async getMatrix(): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}/permissions/matrix`, {
       method: 'GET',
       headers: createHeaders(),
@@ -1038,7 +1038,7 @@ export const permissionsAPI = {
   },
 
   // الحصول على الأعمدة المتاحة
-  async getColumns(): Promise<any[]> {
+  async getColumns(): Promise<Array<Record<string, unknown>>> {
     const response = await fetch(`${API_BASE_URL}/permissions/columns`, {
       method: 'GET',
       headers: createHeaders(),
@@ -1061,7 +1061,7 @@ export const permissionsAPI = {
   // ============ Action Permissions ============
   
   // Get all action permissions
-  async getActionPermissions(): Promise<any[]> {
+  async getActionPermissions(): Promise<Array<Record<string, unknown>>> {
     const response = await fetch(`${API_BASE_URL}/permissions/actions`, {
       method: 'GET',
       headers: createHeaders(),
@@ -1071,7 +1071,7 @@ export const permissionsAPI = {
   },
 
   // Get role action permissions
-  async getRoleActionPermissions(role: string): Promise<any[]> {
+  async getRoleActionPermissions(role: string): Promise<Array<Record<string, unknown>>> {
     const response = await fetch(`${API_BASE_URL}/permissions/actions/role/${role}`, {
       method: 'GET',
       headers: createHeaders(),
@@ -1081,7 +1081,7 @@ export const permissionsAPI = {
   },
 
   // Update action permission
-  async updateActionPermission(role: string, resource: string, action: string, canPerform: boolean): Promise<any> {
+  async updateActionPermission(role: string, resource: string, action: string, canPerform: boolean): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/permissions/actions/update`, {
       method: 'POST',
       headers: createHeaders(),
@@ -1107,7 +1107,7 @@ export const permissionsAPI = {
 // Health Check API
 export const healthAPI = {
   // فحص صحة النظام
-  async check(): Promise<any> {
+  async check(): Promise<{ status: string; message: string }> {
     const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       headers: {

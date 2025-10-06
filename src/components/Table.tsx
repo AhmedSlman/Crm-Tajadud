@@ -8,14 +8,14 @@ type TableProps = {
 
 export default function Table({ headers, children, className = '' }: TableProps) {
   return (
-    <div className={`overflow-x-auto ${className}`}>
-      <table className="w-full">
+    <div className={`overflow-x-auto scrollbar-thin scrollbar-thumb-[#563EB7] scrollbar-track-[#1a1333] ${className}`}>
+      <table className="w-full min-w-[640px]">
         <thead>
           <tr className="border-b border-[#563EB7]/20">
             {headers.map((header, index) => (
               <th
                 key={index}
-                className="px-4 py-3 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider"
+                className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-gray-300 uppercase tracking-wider whitespace-nowrap"
               >
                 {header}
               </th>
@@ -54,7 +54,7 @@ type TableCellProps = {
 
 export function TableCell({ children, className = '' }: TableCellProps) {
   return (
-    <td className={`px-4 py-4 text-sm text-gray-300 ${className}`}>
+    <td className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-gray-300 ${className}`}>
       {children}
     </td>
   );

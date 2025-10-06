@@ -3,6 +3,8 @@
 import { Bell, Search, Settings, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Logo from '@/assets/dqdddd.svg';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { getAvatarUrl } from '@/lib/config';
@@ -30,9 +32,24 @@ export default function Topbar() {
   };
 
   return (
-    <div className="h-16 bg-gradient-to-r from-[#14102a] via-[#1a1333] to-[#14102a] border-b border-[#563EB7]/30 fixed top-0 right-0 left-64 z-10 flex items-center justify-between px-6 backdrop-blur-xl shadow-lg shadow-black/20">
-      <div className="flex-1 max-w-xl">
-        <div className="relative group">
+    <div className="h-16 bg-gradient-to-r from-[#14102a] via-[#1a1333] to-[#14102a] border-b border-[#563EB7]/30 fixed top-0 right-0 left-0 lg:left-64 z-30 flex items-center justify-between px-4 md:px-6 backdrop-blur-xl shadow-lg shadow-black/20">
+      {/* Logo on Mobile */}
+      <div className="lg:hidden flex items-center">
+        <Image 
+          src={Logo} 
+          alt="Company Logo" 
+          width={120} 
+          height={18}
+          quality={100}
+          className="object-contain"
+          priority
+          unoptimized
+        />
+      </div>
+
+      {/* Search Bar - Hidden on mobile */}
+      <div className="hidden md:flex flex-1 max-w-xl">
+        <div className="relative group w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#563EB7] transition-colors" size={20} />
           <input
             type="text"
@@ -43,7 +60,7 @@ export default function Topbar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 ml-6">
+      <div className="flex items-center gap-2 md:gap-3 ml-auto">
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}

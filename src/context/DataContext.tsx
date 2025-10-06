@@ -135,9 +135,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       if (permsData && permsData.length > 0) {
         // Normalize permissions (convert snake_case to camelCase)
-        const normalizedPerms = permsData.map((p: any) => ({
-          role: p.role,
-          column: p.column,
+        const normalizedPerms = (permsData as Array<{ role: string; column: string; can_edit?: boolean; canEdit?: boolean }>).map((p) => ({
+          role: p.role as UserRole,
+          column: p.column as ColumnName,
           canEdit: p.can_edit ?? p.canEdit ?? false,
         }));
         
@@ -146,11 +146,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('permissions', JSON.stringify(normalizedPerms));
       }
       
-      if (rolesData && rolesData.roles) {
+      if (rolesData && 'roles' in rolesData && Array.isArray(rolesData.roles)) {
         // Extract only custom roles from the API response
-        const customRolesList = rolesData.roles
-          .filter((role: any) => role.is_custom)
-          .map((role: any) => ({
+        const customRolesList = (rolesData.roles as Array<{ id: number; value: string; label: string; emoji: string; is_custom?: boolean }>)
+          .filter((role) => role.is_custom)
+          .map((role) => ({
             id: String(role.id), // Backend sends id as number, convert to string
             name: role.value,
             label: role.label,
@@ -166,10 +166,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       if (actionPermsData && actionPermsData.length > 0) {
         // Normalize action permissions
-        const normalizedActionPerms = actionPermsData.map((p: any) => ({
-          role: p.role,
-          resource: p.resource,
-          action: p.action,
+        const normalizedActionPerms = (actionPermsData as Array<{ role: string; resource: string; action: string; can_perform?: boolean; canPerform?: boolean }>).map((p) => ({
+          role: p.role as UserRole,
+          resource: p.resource as ResourceType,
+          action: p.action as ActionType,
           canPerform: p.can_perform ?? p.canPerform ?? false,
         }));
         
@@ -222,7 +222,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       // تحديث currentUser من authUser
       if (authUser) {
-        setCurrentUser(authUser as any);
+        setCurrentUser(authUser as User);
       }
       
     } catch (error) {
@@ -238,12 +238,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const newClient = await api.clients.create({
         name: clientData.name,
-        contact_person: clientData.contactPerson,
+        contactPerson: clientData.contactPerson,
         phone: clientData.phone,
         email: clientData.email,
         company: clientData.company,
-        notes: clientData.notes || '',
-        status: 'active'
+        notes: clientData.notes || ''
       });
       
       setClients([...clients, newClient]);
@@ -260,7 +259,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const updated = await api.clients.update(id, {
         name: updatedClient.name,
-        contact_person: updatedClient.contactPerson,
+        contactPerson: updatedClient.contactPerson,
         phone: updatedClient.phone,
         email: updatedClient.email,
         company: updatedClient.company,
@@ -294,11 +293,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const newProject = await api.projects.create({
         name: projectData.name,
         description: projectData.description,
-        client_id: parseInt(projectData.clientId),
-        start_date: projectData.startDate,
-        end_date: projectData.endDate,
+        clientId: projectData.clientId,
+        startDate: projectData.startDate,
+        endDate: projectData.endDate,
         status: projectData.status,
-        project_manager_id: parseInt(projectData.projectManager),
+        projectManager: projectData.projectManager,
         progress: projectData.progress || 0
       });
       
@@ -317,11 +316,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const updated = await api.projects.update(id, {
         name: updatedProject.name,
         description: updatedProject.description,
-        client_id: updatedProject.clientId ? parseInt(updatedProject.clientId) : undefined,
-        start_date: updatedProject.startDate,
-        end_date: updatedProject.endDate,
+        clientId: updatedProject.clientId,
+        startDate: updatedProject.startDate,
+        endDate: updatedProject.endDate,
         status: updatedProject.status,
-        project_manager_id: updatedProject.projectManager ? parseInt(updatedProject.projectManager) : undefined,
+        projectManager: updatedProject.projectManager,
         progress: updatedProject.progress
       });
       
@@ -351,14 +350,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const newTask = await api.tasks.create({
         title: taskData.title,
-        description: taskData.description || '', // Default to empty string if undefined
+        description: taskData.description || '',
         type: taskData.type,
         status: taskData.status,
         priority: taskData.priority,
-        assigned_to: parseInt(taskData.assignedTo),
-        start_date: taskData.startDate,
-        due_date: taskData.dueDate,
-        project_id: taskData.projectId ? parseInt(taskData.projectId) : undefined,
+        assignedTo: taskData.assignedTo,
+        startDate: taskData.startDate,
+        dueDate: taskData.dueDate,
+        projectId: taskData.projectId,
         progress: taskData.progress || 0
       });
       
@@ -376,15 +375,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const updated = await api.tasks.update(id, {
         title: updatedTask.title,
-        description: updatedTask.description !== undefined ? updatedTask.description : undefined,
+        description: updatedTask.description,
         type: updatedTask.type,
         status: updatedTask.status,
         priority: updatedTask.priority,
-        assigned_to: updatedTask.assignedTo ? parseInt(updatedTask.assignedTo) : undefined,
-        start_date: updatedTask.startDate,
-        due_date: updatedTask.dueDate,
-        completion_date: updatedTask.completionDate,
-        project_id: updatedTask.projectId ? parseInt(updatedTask.projectId) : undefined,
+        assignedTo: updatedTask.assignedTo,
+        startDate: updatedTask.startDate,
+        dueDate: updatedTask.dueDate,
+        completionDate: updatedTask.completionDate,
+        projectId: updatedTask.projectId,
         progress: updatedTask.progress
       });
       
@@ -414,14 +413,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const newCampaign = await api.campaigns.create({
         name: campaignData.name,
-        project_id: parseInt(campaignData.projectId),
+        projectId: campaignData.projectId,
         type: campaignData.type,
         objective: campaignData.objective,
-        start_date: campaignData.startDate,
-        end_date: campaignData.endDate,
+        startDate: campaignData.startDate,
+        endDate: campaignData.endDate,
         budget: campaignData.budget,
         status: campaignData.status,
-        responsible_person_id: parseInt(campaignData.responsiblePerson),
+        responsiblePerson: campaignData.responsiblePerson,
         progress: campaignData.progress || 0
       });
       
@@ -439,14 +438,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const updated = await api.campaigns.update(id, {
         name: updatedCampaign.name,
-        project_id: updatedCampaign.projectId ? parseInt(updatedCampaign.projectId) : undefined,
+        projectId: updatedCampaign.projectId,
         type: updatedCampaign.type,
         objective: updatedCampaign.objective,
-        start_date: updatedCampaign.startDate,
-        end_date: updatedCampaign.endDate,
+        startDate: updatedCampaign.startDate,
+        endDate: updatedCampaign.endDate,
         budget: updatedCampaign.budget,
         status: updatedCampaign.status,
-        responsible_person_id: updatedCampaign.responsiblePerson ? parseInt(updatedCampaign.responsiblePerson) : undefined,
+        responsiblePerson: updatedCampaign.responsiblePerson,
         progress: updatedCampaign.progress
       });
       
@@ -476,25 +475,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const newContent = await api.contents.create({
         title: contentData.title,
-        content_type: contentData.contentType,
-        project_id: contentData.projectId ? parseInt(contentData.projectId) : undefined,
-        campaign_id: contentData.campaignId ? parseInt(contentData.campaignId) : undefined,
+        contentType: contentData.contentType,
+        projectId: contentData.projectId,
+        campaignId: contentData.campaignId,
         status: contentData.status,
-        assigned_to: parseInt(contentData.assignedTo),
-        start_date: contentData.startDate,
-        due_date: contentData.dueDate,
-        publish_date: contentData.publishDate,
+        assignedTo: contentData.assignedTo,
+        startDate: contentData.startDate,
+        dueDate: contentData.dueDate,
+        publishDate: contentData.publishDate,
         priority: contentData.priority,
         progress: contentData.progress || 0,
-        design_brief: contentData.designBrief,
+        designBrief: contentData.designBrief,
         inspiration: contentData.inspiration,
         design: contentData.design,
-        text_content: contentData.textContent,
-        drive_link: contentData.driveLink,
+        textContent: contentData.textContent,
+        driveLink: contentData.driveLink,
         notes: contentData.notes,
         month: contentData.month,
-        is_reel: contentData.isReel || false,
-        ready_for_calendar: contentData.readyForCalendar || false
+        isReel: contentData.isReel || false,
+        readyForCalendar: contentData.readyForCalendar || false
       });
       
       setContent([...content, newContent]);
@@ -511,25 +510,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const updated = await api.contents.update(id, {
         title: updatedContent.title,
-        content_type: updatedContent.contentType,
-        project_id: updatedContent.projectId ? parseInt(updatedContent.projectId) : undefined,
-        campaign_id: updatedContent.campaignId ? parseInt(updatedContent.campaignId) : undefined,
+        contentType: updatedContent.contentType,
+        projectId: updatedContent.projectId,
+        campaignId: updatedContent.campaignId,
         status: updatedContent.status,
-        assigned_to: updatedContent.assignedTo ? parseInt(updatedContent.assignedTo) : undefined,
-        start_date: updatedContent.startDate,
-        due_date: updatedContent.dueDate,
-        publish_date: updatedContent.publishDate,
+        assignedTo: updatedContent.assignedTo,
+        startDate: updatedContent.startDate,
+        dueDate: updatedContent.dueDate,
+        publishDate: updatedContent.publishDate,
         priority: updatedContent.priority,
         progress: updatedContent.progress,
-        design_brief: updatedContent.designBrief,
+        designBrief: updatedContent.designBrief,
         inspiration: updatedContent.inspiration,
         design: updatedContent.design,
-        text_content: updatedContent.textContent,
-        drive_link: updatedContent.driveLink,
+        textContent: updatedContent.textContent,
+        driveLink: updatedContent.driveLink,
         notes: updatedContent.notes,
         month: updatedContent.month,
-        is_reel: updatedContent.isReel,
-        ready_for_calendar: updatedContent.readyForCalendar
+        isReel: updatedContent.isReel,
+        readyForCalendar: updatedContent.readyForCalendar
       });
       
       setContent(content.map(c => c.id === id ? { ...c, ...updated } : c));
@@ -563,7 +562,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Permissions management
   const canUserEdit = (role: UserRole, column: ColumnName): boolean => {
     const permission = permissions.find(p => p.role === role && p.column === column);
-    return permission?.canEdit || (permission as any)?.can_edit || false;
+    return permission?.canEdit || (permission && 'can_edit' in permission ? (permission as { can_edit?: boolean }).can_edit : false) || false;
   };
 
   const canPerformAction = (role: UserRole, resource: ResourceType, action: ActionType): boolean => {
@@ -575,7 +574,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const permission = actionPermissions.find(
       p => p.role === role && p.resource === resource && p.action === action
     );
-    return permission?.canPerform || (permission as any)?.can_perform || false;
+    return permission?.canPerform || (permission && 'can_perform' in permission ? (permission as { can_perform?: boolean }).can_perform : false) || false;
   };
 
   const updatePermission = async (role: UserRole, column: ColumnName, canEdit: boolean) => {
@@ -641,9 +640,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const resetPermissions = async () => {
     try {
-      const response = await api.permissions.resetToDefault();
-      setPermissions(response.permissions);
-      localStorage.setItem('permissions', JSON.stringify(response.permissions));
+      await api.permissions.resetToDefault();
+      await loadPermissions();
       toast.success('تم إعادة تعيين الصلاحيات بنجاح');
     } catch (error) {
       console.error('Error resetting permissions:', error);
@@ -655,13 +653,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // User management functions
   const updateUser = async (id: string, updatedUser: Partial<User>) => {
     try {
-      const updated = await api.users.update(id, {
-        name: updatedUser.name,
-        role: updatedUser.role,
-        phone: updatedUser.phone,
-        department: updatedUser.department,
-        status: updatedUser.status
-      });
+      const updated = await api.users.update(id, updatedUser);
       
       setUsers(users.map(u => u.id === id ? { ...u, ...updated } : u));
       toast.success('تم تحديث المستخدم بنجاح');
@@ -727,7 +719,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       await loadPermissions();
       
       // Don't show toast here - let the calling component handle it
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting custom role:', error);
       // Re-throw the error with the message from the API
       throw error;
@@ -806,7 +798,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       await api.users.delete(userId);
       // Update local state
       setUsers(users.filter(u => u.id !== userId));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting user:', error);
       throw error;
     }

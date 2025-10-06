@@ -123,8 +123,8 @@ function UsersManagementContent() {
       toast.success(`${user?.name} has been deleted`, {
         description: 'User removed from the system',
       });
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to delete user';
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
       
       if (errorMessage.includes('admin')) {
         toast.error('Cannot delete admin users', {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import * as React from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useData } from '@/context/DataContext';
@@ -171,9 +171,9 @@ function PermissionsContent() {
       toast.success('Custom role added successfully');
       setIsAddRoleModalOpen(false);
       setRoleFormData({ name: '', label: '', emoji: '👤' });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Add role error:', error);
-      toast.error(error.message || 'Failed to add custom role');
+      toast.error(error instanceof Error ? error.message : 'Failed to add custom role');
     }
   };
 
@@ -188,9 +188,9 @@ function PermissionsContent() {
       toast.success('Role updated successfully');
       setIsEditRoleModalOpen(false);
       setEditingRole(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Update role error:', error);
-      toast.error(error.message || 'Failed to update role');
+      toast.error(error instanceof Error ? error.message : 'Failed to update role');
     }
   };
 
@@ -201,9 +201,9 @@ function PermissionsContent() {
       await deleteCustomRole(deleteConfirmRole.id);
       toast.success('Role deleted successfully');
       setDeleteConfirmRole(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete role error:', error);
-      const errorMessage = error.message || 'Failed to delete role';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete role';
       
       // Show the exact error message from the backend
       if (errorMessage.includes('assigned') || errorMessage.includes('user')) {

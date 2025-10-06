@@ -11,14 +11,11 @@ import {
   Building2, 
   LogOut, 
   Bell, 
-  Calendar, 
-  TrendingUp, 
   CheckCircle, 
   Clock, 
   AlertTriangle,
   Eye,
   BarChart3,
-  Users,
   Target,
   Zap, 
   ArrowRight,
@@ -31,11 +28,14 @@ import api from '@/lib/api';
 export default function ClientDashboardPage() {
   const router = useRouter();
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
-  const [clientProjects, setClientProjects] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [clientProjects, setClientProjects] = useState<ClientProjectView[]>([]);
+  const [notifications, setNotifications] = useState<ClientNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [dashboardStats, setDashboardStats] = useState<{
+    projects?: { total: number; active: number; completed: number };
+    tasks?: { total: number; completed: number };
+  } | null>(null);
 
   useEffect(() => {
     // Get client user from localStorage (already validated by ClientProtectedRoute)
@@ -58,7 +58,7 @@ export default function ClientDashboardPage() {
         api.clientPortal.getNotifications(),
       ]);
 
-      setDashboardStats(dashboardData.stats);
+      setDashboardStats(dashboardData.stats as typeof dashboardStats);
       setClientProjects(projectsData);
       setNotifications(notificationsData);
       
@@ -130,8 +130,8 @@ export default function ClientDashboardPage() {
     <ClientProtectedRoute>
       <div className="min-h-screen bg-[#0c081e] text-white">
       {/* Header */}
-      <div className="bg-[#14102a] border-b border-[#563EB7]/20 px-6 py-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-[#14102a] border-b border-[#563EB7]/20 px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#8B5CF6] rounded-xl flex items-center justify-center">
               <Building2 className="text-white" size={20} />
@@ -182,7 +182,7 @@ export default function ClientDashboardPage() {
                               <h4 className="font-medium text-white text-sm">{notif.title}</h4>
                               <p className="text-gray-400 text-xs mt-1">{notif.message}</p>
                               <p className="text-gray-500 text-xs mt-2">
-                                {notif.date ? new Date(notif.date).toLocaleDateString() : 'N/A'}
+                                {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'N/A'}
                               </p>
                             </div>
                             {!notif.read && (
@@ -222,19 +222,19 @@ export default function ClientDashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-[#563EB7]/20 to-[#8B5CF6]/20 border border-[#563EB7]/30 rounded-2xl p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[#563EB7]/20 to-[#8B5CF6]/20 border border-[#563EB7]/30 rounded-2xl p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
                 Welcome back, {clientUser.name}! 👋
               </h2>
-              <p className="text-gray-300">
+              <p className="text-sm sm:text-base text-gray-300">
                 Here&apos;s what&apos;s happening with your projects at {clientUser.company}
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="text-sm text-gray-400">Last login</p>
               <p className="text-white font-medium">
                 {clientUser.lastLogin ? new Date(clientUser.lastLogin).toLocaleDateString() : 'Today'}
@@ -244,7 +244,7 @@ export default function ClientDashboardPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <Card hover={false}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -353,7 +353,7 @@ export default function ClientDashboardPage() {
                   </div>
 
                   {/* Project Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div className="bg-[#1a1333] rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <CheckCircle className="text-green-400" size={16} />
@@ -404,7 +404,7 @@ export default function ClientDashboardPage() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <Card title="Need Help?" hover={false}>
             <div className="p-6">
               <p className="text-gray-400 mb-4">
@@ -431,7 +431,7 @@ export default function ClientDashboardPage() {
                   <div className="flex-1">
                     <p className="text-sm text-white font-medium">{notif.title}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {notif.date ? new Date(notif.date).toLocaleDateString() : 'N/A'}
+                      {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'N/A'}
                     </p>
                   </div>
                 </div>

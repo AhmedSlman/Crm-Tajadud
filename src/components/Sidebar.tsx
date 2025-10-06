@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Logo from '@/assets/dqdddd.svg';
 import { 
@@ -16,7 +17,9 @@ import {
   BarChart3,
   Sparkles,
   UserCog,
-  Shield
+  Shield,
+  Menu,
+  X
 } from 'lucide-react';
 
 const navItems = [
@@ -35,6 +38,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { isAdmin } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Filter nav items based on user role
   const filteredNavItems = navItems.filter(item => {
@@ -42,8 +46,55 @@ export default function Sidebar() {
     return true;
   });
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const sidebar = document.getElementById('mobile-sidebar');
+      const menuButton = document.getElementById('mobile-menu-button');
+      if (isMobileMenuOpen && sidebar && !sidebar.contains(e.target as Node) && !menuButton?.contains(e.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileMenuOpen]);
+
   return (
-    <div className="w-64 bg-gradient-to-b from-[#14102a] to-[#0c081e] h-screen fixed left-0 top-0 flex flex-col border-r border-[#563EB7]/30 shadow-2xl shadow-black/50">
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        id="mobile-menu-button"
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-[#14102a] border border-[#563EB7]/30 rounded-lg text-white hover:bg-[#1a1333] transition-colors"
+      >
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Overlay for mobile */}
+      {isMobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div 
+        id="mobile-sidebar"
+        className={`
+          w-64 bg-gradient-to-b from-[#14102a] to-[#0c081e] h-screen fixed left-0 top-0 flex flex-col 
+          border-r border-[#563EB7]/30 shadow-2xl shadow-black/50 z-40
+          transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+        `}
+      >
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#563EB7]/5 via-transparent to-[#7c5fdc]/5 opacity-50" />
       
@@ -123,6 +174,7 @@ export default function Sidebar() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

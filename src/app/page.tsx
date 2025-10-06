@@ -90,15 +90,15 @@ function DashboardContent() {
       <div className="relative z-10">
         <div className="absolute -inset-1 bg-gradient-to-r from-[#563EB7]/20 via-[#7c5fdc]/20 to-[#563EB7]/20 blur-3xl -z-10" />
         <div className="relative">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2">
             Dashboard
           </h1>
-          <p className="text-gray-400 text-lg">Welcome back! Here&apos;s what&apos;s happening with your projects.</p>
+          <p className="text-gray-400 text-sm sm:text-base lg:text-lg">Welcome back! Here&apos;s what&apos;s happening with your projects.</p>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -153,7 +153,7 @@ function DashboardContent() {
       </div>
 
       {/* Active Projects & Recent Tasks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Active Projects */}
         <Card title="Active Projects" action={
           <Link href="/projects" className="text-sm text-[#563EB7] hover:text-[#6d4dd4] font-semibold flex items-center gap-1 group">

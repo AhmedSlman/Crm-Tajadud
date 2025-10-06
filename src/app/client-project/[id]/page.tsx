@@ -11,13 +11,9 @@ import {
   ArrowLeft, 
   Calendar, 
   CheckCircle, 
-  Clock, 
   Target, 
   Zap, 
   Users, 
-  TrendingUp,
-  Eye,
-  ExternalLink,
   FileText,
   Video,
   Image,
@@ -33,7 +29,7 @@ export default function ClientProjectDetailPage() {
   const projectId = params.id as string;
   
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [projectTasks, setProjectTasks] = useState<Task[]>([]);
   const [projectContent, setProjectContent] = useState<Content[]>([]);
   const [projectCampaigns, setProjectCampaigns] = useState<Campaign[]>([]);
@@ -58,9 +54,9 @@ export default function ClientProjectDetailPage() {
       const projectData = await api.clientPortal.getProject(projectId);
       
       setProject(projectData);
-      setProjectTasks(projectData.tasks || []);
-      setProjectContent(projectData.contents || []);
-      setProjectCampaigns(projectData.campaigns || []);
+      setProjectTasks((projectData as Project & { tasks?: Task[] }).tasks || []);
+      setProjectContent((projectData as Project & { contents?: Content[] }).contents || []);
+      setProjectCampaigns((projectData as Project & { campaigns?: Campaign[] }).campaigns || []);
       
     } catch (error) {
       console.error('Error loading project:', error);
@@ -92,7 +88,9 @@ export default function ClientProjectDetailPage() {
   const completedTasks = projectTasks.filter(t => t.status === 'done').length;
   const publishedContent = projectContent.filter(c => c.status === 'published').length;
   const activeCampaigns = projectCampaigns.filter(c => c.status === 'running').length;
-  const projectManager = project.projectManager || project.project_manager;
+  const projectManager = (typeof project.projectManager === 'object' && project.projectManager !== null) 
+    ? project.projectManager as { name: string; role: string; avatar?: string }
+    : undefined;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -148,12 +146,12 @@ export default function ClientProjectDetailPage() {
       </div>
 
       {/* Project Header */}
-      <div className="p-6">
-        <div className="bg-gradient-to-r from-[#563EB7]/20 to-[#8B5CF6]/20 border border-[#563EB7]/30 rounded-2xl p-6 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="p-4 sm:p-6">
+        <div className="bg-gradient-to-r from-[#563EB7]/20 to-[#8B5CF6]/20 border border-[#563EB7]/30 rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">{project.name}</h2>
-              <p className="text-gray-300 mb-4">{project.description}</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{project.name}</h2>
+              <p className="text-sm sm:text-base text-gray-300 mb-4">{project.description}</p>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -187,7 +185,7 @@ export default function ClientProjectDetailPage() {
                     {projectManager.avatar ? (
                       <img
                         src={getAvatarUrl(projectManager.avatar)}
-                        alt={projectManager.name}
+                        alt=""
                         className="w-8 h-8 rounded-full"
                       />
                     ) : (
@@ -207,7 +205,7 @@ export default function ClientProjectDetailPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-6">
           <Card hover={false}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">

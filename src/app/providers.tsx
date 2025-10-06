@@ -31,7 +31,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <div className="relative min-h-screen">
             <Sidebar />
             <Topbar />
-            <main className="relative z-0 ml-64 mt-16 p-8 min-h-screen">
+            <main className="relative z-0 lg:ml-64 mt-16 p-4 md:p-6 lg:p-8 min-h-screen">
               {children}
             </main>
             <QuickActions />

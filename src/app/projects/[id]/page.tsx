@@ -108,7 +108,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
       <div className="text-center py-20">
         <h1 className="text-2xl font-bold text-white mb-4">Project not found</h1>
         <p className="text-gray-400 mb-6">
-          The project you're looking for doesn't exist or has been deleted.
+          The project you&apos;re looking for doesn&apos;t exist or has been deleted.
         </p>
         <Link href="/projects">
           <Button variant="secondary">
@@ -144,19 +144,21 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link href="/projects">
             <Button variant="ghost" size="sm">
               <ChevronLeft size={20} />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-white">{project.name}</h1>
-            <p className="text-gray-400 mt-1">{project.description}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">{project.name}</h1>
+            <p className="text-gray-400 text-xs sm:text-sm mt-1 line-clamp-2">{project.description}</p>
           </div>
         </div>
-        <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+        <div className="w-full sm:w-auto">
+          <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+        </div>
       </div>
 
       {/* Project Stats */}
