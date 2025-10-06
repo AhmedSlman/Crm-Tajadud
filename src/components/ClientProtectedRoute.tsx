@@ -10,33 +10,37 @@ interface ClientProtectedRouteProps {
 
 export default function ClientProtectedRoute({ children }: ClientProtectedRouteProps) {
   const router = useRouter();
-  const [clientUser, setClientUser] = useState<ClientUser | null>(null);
-  const [isChecking, setIsChecking] = useState(true);
-
-  // Immediate check before anything renders
-  useEffect(() => {
+  
+  // Check token synchronously - no navigation here
+  const [hasClientToken] = useState(() => {
     if (typeof window !== 'undefined') {
       const storedClient = localStorage.getItem('clientUser');
       const adminToken = localStorage.getItem('token');
-      
-      if (adminToken) {
-        router.push('/');
-        return;
-      }
-      
-      if (!storedClient) {
-        router.push('/client-login');
-        return;
-      }
+      return !!storedClient && !adminToken;
     }
-  }, [router]);
+    return false;
+  });
+  
+  const [clientUser, setClientUser] = useState<ClientUser | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
 
+  // Single useEffect for all checks
   useEffect(() => {
-    // Check if client is logged in
-    const storedClient = localStorage.getItem('clientUser');
+    if (typeof window === 'undefined') return;
     
+    const storedClient = localStorage.getItem('clientUser');
+    const adminToken = localStorage.getItem('token');
+    
+    // If admin token exists, redirect to admin area
+    if (adminToken) {
+      router.replace('/');
+      setIsChecking(false);
+      return;
+    }
+    
+    // If no client user, redirect to client login
     if (!storedClient) {
-      router.push('/client-login');
+      router.replace('/client-login');
       setIsChecking(false);
       return;
     }
@@ -45,7 +49,7 @@ export default function ClientProtectedRoute({ children }: ClientProtectedRouteP
       const client = JSON.parse(storedClient);
       if (client.status === 'suspended') {
         localStorage.removeItem('clientUser');
-        router.push('/client-login');
+        router.replace('/client-login');
         setIsChecking(false);
         return;
       }
@@ -57,19 +61,15 @@ export default function ClientProtectedRoute({ children }: ClientProtectedRouteP
       setIsChecking(false);
     } catch (error) {
       localStorage.removeItem('clientUser');
-      router.push('/client-login');
+      router.replace('/client-login');
       setIsChecking(false);
       return;
     }
   }, [router]);
 
-  // Always show loading until auth check is complete
-  if (isChecking || !clientUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0c081e]">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
+  // Return null if no client token or still checking - prevents any content flash
+  if (!hasClientToken || isChecking || !clientUser) {
+    return null;
   }
 
   return <>{children}</>;

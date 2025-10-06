@@ -33,6 +33,32 @@ const toSnakeCase = (obj: unknown): unknown => {
   return snakeObj;
 };
 
+// Helper function لحفظ الـ token في cookies و localStorage
+const saveToken = (token: string, isClient = false): void => {
+  if (typeof window === 'undefined') return;
+  
+  const tokenKey = isClient ? 'clientToken' : 'token';
+  
+  // حفظ في localStorage
+  localStorage.setItem(tokenKey, token);
+  
+  // حفظ في cookies
+  document.cookie = `${tokenKey}=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict`;
+};
+
+// Helper function لحذف الـ token من cookies و localStorage
+const removeToken = (isClient = false): void => {
+  if (typeof window === 'undefined') return;
+  
+  const tokenKey = isClient ? 'clientToken' : 'token';
+  
+  // حذف من localStorage
+  localStorage.removeItem(tokenKey);
+  
+  // حذف من cookies
+  document.cookie = `${tokenKey}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+};
+
 // Helper function للحصول على التوكن
 const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
@@ -126,9 +152,9 @@ export const authAPI = {
 
     const data = await handleResponse(response);
     
-    // حفظ التوكن
+    // حفظ التوكن في localStorage و cookies
     if (data.token) {
-      localStorage.setItem('token', data.token);
+      saveToken(data.token, false);
       localStorage.setItem('user', JSON.stringify(data));
     }
 
@@ -156,9 +182,9 @@ export const authAPI = {
 
     const data = await handleResponse(response);
     
-    // حفظ التوكن
+    // حفظ التوكن في localStorage و cookies
     if (data.token) {
-      localStorage.setItem('clientToken', data.token);
+      saveToken(data.token, true);
       localStorage.setItem('clientUser', JSON.stringify(data));
     }
 
@@ -198,12 +224,12 @@ export const authAPI = {
 
     await handleResponse(response);
     
-    // مسح البيانات المحلية
+    // مسح البيانات المحلية من localStorage و cookies
     if (isClient) {
-      localStorage.removeItem('clientToken');
+      removeToken(true);
       localStorage.removeItem('clientUser');
     } else {
-      localStorage.removeItem('token');
+      removeToken(false);
       localStorage.removeItem('user');
     }
   },

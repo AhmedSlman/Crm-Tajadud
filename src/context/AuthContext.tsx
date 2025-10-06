@@ -5,6 +5,18 @@ import { useRouter } from 'next/navigation';
 import { AuthUser, LoginCredentials, RegisterData, UserRole } from '@/types';
 import { authAPI } from '@/lib/api';
 
+// Helper function لحذف الـ token من cookies و localStorage
+const clearAuthData = () => {
+  if (typeof window === 'undefined') return;
+  
+  // حذف من localStorage
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  
+  // حذف من cookies
+  document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+};
+
 type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
@@ -44,8 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('user', JSON.stringify(validation.user));
           } else {
             // التوكن غير صالح، مسح البيانات
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
+            clearAuthData();
             setUser(null);
           }
         } catch (error) {
@@ -104,8 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Logout error:', error);
     } finally {
       // مسح البيانات المحلية في جميع الأحوال
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      clearAuthData();
       setUser(null);
       router.push('/auth/login');
     }

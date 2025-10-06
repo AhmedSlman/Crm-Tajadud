@@ -19,72 +19,79 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, loading, isAuthenticated, isAdmin, isPending } = useAuth();
   const router = useRouter();
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
-
-  // Early check on client side - prevent any flash of content
-  useEffect(() => {
+  
+  // Check token synchronously - no navigation here
+  const [hasToken] = useState(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       const clientUser = localStorage.getItem('clientUser');
-      
-      if (clientUser) {
-        router.push('/client-dashboard');
-        return;
-      }
-      
-      if (!token) {
-        router.push('/auth/login');
-        return;
-      }
+      return !!token && !clientUser;
     }
-  }, [router]);
+    return false;
+  });
 
+  // Single useEffect for all auth checks
   useEffect(() => {
-    if (!loading) {
-      // Not authenticated - redirect to login
-      if (!isAuthenticated) {
-        router.push('/auth/login');
-        return;
-      }
+    if (typeof window === 'undefined') return;
+    
+    const token = localStorage.getItem('token');
+    const clientUser = localStorage.getItem('clientUser');
+    
+    // If client user exists, redirect to client area
+    if (clientUser) {
+      router.replace('/client-dashboard');
+      return;
+    }
+    
+    // If no token, redirect to login immediately
+    if (!token) {
+      router.replace('/auth/login');
+      return;
+    }
+    
+    // Wait for auth context to load
+    if (loading) return;
+    
+    // Not authenticated - redirect to login
+    if (!isAuthenticated) {
+      router.replace('/auth/login');
+      return;
+    }
 
-      // Account pending approval
-      if (user && isPending) {
-        router.push('/auth/pending');
-        return;
-      }
+    // Account pending approval
+    if (user && isPending) {
+      router.replace('/auth/pending');
+      return;
+    }
 
-      // Check admin requirement
-      if (requireAdmin && !isAdmin) {
-        router.push('/');
-        return;
-      }
+    // Check admin requirement
+    if (requireAdmin && !isAdmin) {
+      router.replace('/auth/login');
+      return;
+    }
 
-      // Check role-based access
-      if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-        router.push('/');
-        return;
-      }
-      
-      // Auth check complete
-      setHasCheckedAuth(true);
+    // Check role-based access
+    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+      router.replace('/auth/login');
+      return;
     }
   }, [loading, isAuthenticated, isPending, isAdmin, user, router, requireAdmin, allowedRoles]);
 
-  // Show loading until auth is fully verified
-  if (loading || !isAuthenticated || isPending || !hasCheckedAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0c081e]">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+  // Return null if no token - prevents any content flash
+  if (!hasToken) {
+    return null;
   }
 
-  // Check admin access
+  // Return null while checking auth - prevents content flash
+  if (loading || !isAuthenticated || isPending) {
+    return null;
+  }
+
+  // Return null for unauthorized access
   if (requireAdmin && !isAdmin) {
     return null;
   }
 
-  // Check role-based access
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return null;
   }

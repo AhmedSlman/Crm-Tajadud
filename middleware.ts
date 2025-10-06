@@ -4,7 +4,10 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Admin routes that clients should not access
+  // Get auth token from cookies or check for local storage indicator
+  const token = request.cookies.get('token')?.value;
+  
+  // Admin routes that require authentication
   const adminRoutes = [
     '/users',
     '/permissions', 
@@ -34,10 +37,15 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  // If accessing admin route, check for client session
+  // If accessing admin route without authentication, redirect to login
   if (isAdminRoute) {
-    // This will be handled by client-side protection in ProtectedRoute component
-    // We don't block here to allow proper admin authentication flow
+    // Check if user has token in cookies
+    if (!token) {
+      // Redirect to login page
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/login';
+      return NextResponse.redirect(url);
+    }
     return NextResponse.next();
   }
 
