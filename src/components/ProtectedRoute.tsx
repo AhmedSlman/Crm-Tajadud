@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
@@ -19,16 +19,28 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, loading, isAuthenticated, isAdmin, isPending } = useAuth();
   const router = useRouter();
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
+  // Early check on client side - prevent any flash of content
   useEffect(() => {
-    if (!loading) {
-      // Check if client is trying to access admin routes
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
       const clientUser = localStorage.getItem('clientUser');
+      
       if (clientUser) {
         router.push('/client-dashboard');
         return;
       }
+      
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+    }
+  }, [router]);
 
+  useEffect(() => {
+    if (!loading) {
       // Not authenticated - redirect to login
       if (!isAuthenticated) {
         router.push('/auth/login');
@@ -52,11 +64,14 @@ export default function ProtectedRoute({
         router.push('/');
         return;
       }
+      
+      // Auth check complete
+      setHasCheckedAuth(true);
     }
   }, [loading, isAuthenticated, isPending, isAdmin, user, router, requireAdmin, allowedRoles]);
 
-  // Always show loading while checking auth or during redirects
-  if (loading || !isAuthenticated || isPending) {
+  // Show loading until auth is fully verified
+  if (loading || !isAuthenticated || isPending || !hasCheckedAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0c081e]">
         <LoadingSpinner size="lg" />

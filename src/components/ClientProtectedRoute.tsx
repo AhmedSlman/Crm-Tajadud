@@ -13,6 +13,24 @@ export default function ClientProtectedRoute({ children }: ClientProtectedRouteP
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
   const [isChecking, setIsChecking] = useState(true);
 
+  // Immediate check before anything renders
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedClient = localStorage.getItem('clientUser');
+      const adminToken = localStorage.getItem('token');
+      
+      if (adminToken) {
+        router.push('/');
+        return;
+      }
+      
+      if (!storedClient) {
+        router.push('/client-login');
+        return;
+      }
+    }
+  }, [router]);
+
   useEffect(() => {
     // Check if client is logged in
     const storedClient = localStorage.getItem('clientUser');
