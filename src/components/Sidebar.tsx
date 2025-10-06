@@ -170,7 +170,7 @@ export default function Sidebar() {
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             <span>System Active</span>
           </div>
-          <div className="text-gray-500">© 2025 Agency CRM</div>
+          <div className="text-gray-500">© 2025 Tajadud</div>
         </div>
       </div>
     </div>

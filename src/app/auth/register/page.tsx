@@ -243,7 +243,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-8">
-          © 2025 Agency CRM. All rights reserved.
+          © 2025 Tajadud. All rights reserved.
         </p>
       </div>
     </div>
