@@ -62,4 +62,17 @@ export const config = {
   },
 };
 
+// Helper function to get full avatar URL
+export const getAvatarUrl = (avatar?: string): string => {
+  if (!avatar) return '';
+  
+  // If already a full URL (http/https or data URL)
+  if (avatar.startsWith('http') || avatar.startsWith('data:')) {
+    return avatar;
+  }
+  
+  // If relative path from backend
+  return `https://crm-api.tajadud.org/public/storage/${avatar}`;
+};
+
 export default config;

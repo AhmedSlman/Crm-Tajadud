@@ -2,10 +2,10 @@
 
 import { Bell, Search, Settings, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
+import { getAvatarUrl } from '@/lib/config';
 
 export default function Topbar() {
   const router = useRouter();
@@ -112,7 +112,11 @@ export default function Topbar() {
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-full flex items-center justify-center overflow-hidden shadow-lg shadow-[#563EB7]/50 group-hover:shadow-[#563EB7]/80 transition-all duration-300 group-hover:scale-110">
                   {user.avatar ? (
-                    <Image src={user.avatar} alt={user.name} width={40} height={40} className="rounded-full" />
+                    <img 
+                      src={getAvatarUrl(user.avatar)} 
+                      alt={user.name} 
+                      className="w-full h-full object-cover rounded-full" 
+                    />
                   ) : (
                     <User size={20} className="text-white" />
                   )}

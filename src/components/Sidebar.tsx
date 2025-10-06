@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import Image from 'next/image';
+import Logo from '@/assets/dqdddd.svg';
 import { 
   LayoutDashboard, 
   Users, 
@@ -46,17 +48,16 @@ export default function Sidebar() {
       <div className="absolute inset-0 bg-gradient-to-br from-[#563EB7]/5 via-transparent to-[#7c5fdc]/5 opacity-50" />
       
       <div className="relative z-10 p-6 border-b border-[#563EB7]/20">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3 group">
-          <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-xl flex items-center justify-center shadow-lg shadow-[#563EB7]/50 group-hover:shadow-[#563EB7]/80 transition-all duration-300 group-hover:scale-110">
-              <Sparkles className="text-white" size={20} />
-            </div>
-            <div className="absolute -inset-1 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-xl opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-300" />
-          </div>
-          <span className="bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-            Agency CRM
-          </span>
-        </h1>
+        <div className="flex items-center justify-center">
+          <Image 
+            src={Logo} 
+            alt="Company Logo" 
+            width={180} 
+            height={60}
+            className="object-contain"
+            priority
+          />
+        </div>
       </div>
       
       <nav className="relative z-10 flex-1 p-4 overflow-y-auto">

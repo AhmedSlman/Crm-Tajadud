@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
+import Image from 'next/image';
+import Logo from '@/assets/dqdddd 1.svg';
 import { Building2, Lock, Mail, Eye, EyeOff, AlertCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { ClientUser } from '@/types';
@@ -64,7 +66,17 @@ export default function ClientLoginPage() {
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
         {/* Left Side - Branding */}
         <div className="flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-6 p-8">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-center mb-4">
+            <Image 
+              src={Logo} 
+              alt="Company Logo" 
+              width={250} 
+              height={100}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-[#563EB7] to-[#8B5CF6] rounded-xl flex items-center justify-center">
               <Building2 className="text-white" size={24} />
             </div>

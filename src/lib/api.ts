@@ -196,6 +196,33 @@ export const authAPI = {
     }
   },
 
+  // Upload avatar
+  async uploadAvatar(file: File): Promise<{ avatar: string; avatar_url: string }> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await fetch(`${API_BASE_URL}/auth/profile/avatar`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        // Don't set Content-Type - let browser set it with boundary for FormData
+      },
+      body: formData,
+    });
+
+    return handleResponse(response);
+  },
+
+  // Delete avatar
+  async deleteAvatar(): Promise<{ avatar: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/profile/avatar`, {
+      method: 'DELETE',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
   // طلب إعادة تعيين كلمة المرور
   async forgotPassword(email: string): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {

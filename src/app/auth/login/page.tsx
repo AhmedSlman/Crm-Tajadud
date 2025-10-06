@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
+import Image from 'next/image';
+import Logo from '@/assets/dqdddd.svg';
 import { LogIn, Sparkles, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -48,8 +50,15 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#563EB7] to-[#7c5fdc] rounded-2xl shadow-2xl shadow-[#563EB7]/50 mb-4 animate-fadeIn">
-            <Sparkles className="text-white" size={32} />
+          <div className="inline-flex items-center justify-center mb-4 animate-fadeIn">
+            <Image 
+              src={Logo} 
+              alt="Company Logo" 
+              width={200} 
+              height={80}
+              className="object-contain"
+              priority
+            />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2">
             Welcome Back
