@@ -207,7 +207,7 @@ function TaskCard({
 }
 
 export default function TasksKanban({ tasks: allTasks, projectId, month, onRefresh }: TasksKanbanProps) {
-  const { users, addTask, updateTask, deleteTask } = useData();
+  const { users, activeUsers, addTask, updateTask, deleteTask } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -232,7 +232,7 @@ export default function TasksKanban({ tasks: allTasks, projectId, month, onRefre
     description: '',
     type: 'general' as Task['type'],
     priority: 'medium' as Task['priority'],
-    assignedTo: users[0]?.id || '',
+    assignedTo: activeUsers[0]?.id || users[0]?.id || '',
     startDate: today,
     dueDate: tomorrowStr,
   });
@@ -320,7 +320,7 @@ export default function TasksKanban({ tasks: allTasks, projectId, month, onRefre
         description: '',
         type: 'general',
         priority: 'medium',
-        assignedTo: users[0]?.id || '',
+        assignedTo: activeUsers[0]?.id || users[0]?.id || '',
         startDate: today,
         dueDate: tomorrowStr,
       });
@@ -373,7 +373,7 @@ export default function TasksKanban({ tasks: allTasks, projectId, month, onRefre
         description: '',
         type: 'general',
         priority: 'medium',
-        assignedTo: users[0]?.id || '',
+        assignedTo: activeUsers[0]?.id || users[0]?.id || '',
         startDate: today,
         dueDate: tomorrowStr,
       });
@@ -454,7 +454,21 @@ export default function TasksKanban({ tasks: allTasks, projectId, month, onRefre
       {/* Add/Edit Task Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => !submitting && setIsModalOpen(false)}
+        onClose={() => {
+          if (!submitting) {
+            setIsModalOpen(false);
+            setEditingTask(null);
+            setFormData({
+              title: '',
+              description: '',
+              type: 'general',
+              priority: 'medium',
+              assignedTo: activeUsers[0]?.id || users[0]?.id || '',
+              startDate: today,
+              dueDate: tomorrowStr,
+            });
+          }
+        }}
         title={editingTask ? 'Edit Task' : 'Add New Task'}
         footer={
           <>
@@ -463,6 +477,15 @@ export default function TasksKanban({ tasks: allTasks, projectId, month, onRefre
               onClick={() => {
                 setIsModalOpen(false);
                 setEditingTask(null);
+                setFormData({
+                  title: '',
+                  description: '',
+                  type: 'general',
+                  priority: 'medium',
+                  assignedTo: activeUsers[0]?.id || users[0]?.id || '',
+                  startDate: today,
+                  dueDate: tomorrowStr,
+                });
               }}
               disabled={submitting}
             >
@@ -553,7 +576,7 @@ export default function TasksKanban({ tasks: allTasks, projectId, month, onRefre
             label="Assign To"
             value={formData.assignedTo}
             onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-            options={users.filter(u => u.role !== 'admin').map(u => ({ 
+            options={activeUsers.map(u => ({ 
               value: u.id, 
               label: u.name 
             }))}

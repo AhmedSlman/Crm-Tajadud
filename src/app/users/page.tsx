@@ -10,7 +10,7 @@ import Table, { TableRow, TableCell } from '@/components/Table';
 import Modal from '@/components/Modal';
 import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
-import { CheckCircle, XCircle, UserCog, Ban, Users as UsersIcon, Mail, Phone } from 'lucide-react';
+import { CheckCircle, XCircle, UserCog, Ban, Users as UsersIcon, Mail, Phone, Trash2 } from 'lucide-react';
 import { User, UserStatus } from '@/types';
 import { toast } from 'sonner';
 
@@ -23,7 +23,7 @@ export default function UsersManagementPage() {
 }
 
 function UsersManagementContent() {
-  const { users, approveUser, rejectUser, suspendUser, activateUser } = useData();
+  const { users, approveUser, rejectUser, suspendUser, activateUser, deleteUser } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | UserStatus>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -108,6 +108,33 @@ function UsersManagementContent() {
       toast.error('Failed to activate user', {
         description: error instanceof Error ? error.message : 'Please try again',
       });
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    
+    if (!confirm(`Are you sure you want to delete ${user?.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteUser(userId);
+      toast.success(`${user?.name} has been deleted`, {
+        description: 'User removed from the system',
+      });
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to delete user';
+      
+      if (errorMessage.includes('admin')) {
+        toast.error('Cannot delete admin users', {
+          description: 'Admin users are protected from deletion',
+        });
+      } else {
+        toast.error('Failed to delete user', {
+          description: errorMessage,
+        });
+      }
     }
   };
 
@@ -372,6 +399,16 @@ function UsersManagementContent() {
                     >
                       <UserCog size={16} />
                     </Button>
+                    {user.role !== 'admin' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(user.id)}
+                        title="Delete User"
+                      >
+                        <Trash2 size={16} className="text-red-400" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

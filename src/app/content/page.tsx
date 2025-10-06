@@ -14,7 +14,7 @@ import { Plus, Pencil, Trash2, FileText, Calendar, User, Filter } from 'lucide-r
 import { Content } from '@/types';
 
 export default function ContentPage() {
-  const { content, projects, campaigns, users, addContent, updateContent, deleteContent } = useData();
+  const { content, projects, campaigns, users, activeUsers, addContent, updateContent, deleteContent } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -299,7 +299,7 @@ export default function ContentPage() {
               label="Assigned To"
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-              options={users.map(u => ({ value: u.id, label: u.name }))}
+              options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">

@@ -129,7 +129,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   });
 
   const monthContent = projectContent.filter(c => c.month === monthKey);
-  const monthReels = monthContent.filter(c => c.isReel === true);
+  const monthReels = monthContent.filter(c => !!c.isReel);
   const monthRegularContent = monthContent.filter(c => !c.isReel);
 
   // Tabs configuration

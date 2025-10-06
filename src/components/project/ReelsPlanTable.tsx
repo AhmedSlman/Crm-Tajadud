@@ -20,7 +20,7 @@ type ReelsPlanTableProps = {
 };
 
 export default function ReelsPlanTable({ reels, projectId, month, userRole, onRefresh }: ReelsPlanTableProps) {
-  const { addContent, updateContent, deleteContent, users, canUserEdit } = useData();
+  const { addContent, updateContent, deleteContent, users, activeUsers, canUserEdit } = useData();
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,9 +33,25 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
   const [localReels, setLocalReels] = useState<Content[]>(reels);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   
-  // Update local reels when props change, but exclude deleted items
+  // Update local reels when props change (only for new/removed items)
   useEffect(() => {
-    setLocalReels(reels.filter(r => !deletedIds.has(String(r.id))));
+    const filteredReels = reels.filter(r => !deletedIds.has(String(r.id)));
+    
+    // Check if items were added or removed
+    const localIds = new Set(localReels.map(r => String(r.id)));
+    const newIds = new Set(filteredReels.map(r => String(r.id)));
+    
+    const hasNewItems = filteredReels.some(r => !localIds.has(String(r.id)));
+    const hasRemovedItems = localReels.some(r => !newIds.has(String(r.id)));
+    
+    if (hasNewItems || hasRemovedItems) {
+      // Only sync when items are added/removed, preserve local updates
+      setLocalReels(filteredReels.map(item => {
+        const localItem = localReels.find(l => String(l.id) === String(item.id));
+        return localItem || item;
+      }));
+    }
+    // Don't update if only data changed (preserve optimistic updates)
   }, [reels, deletedIds]);
   
   const today = new Date().toISOString().split('T')[0];
@@ -47,10 +63,16 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
     title: '',
     contentType: 'video' as Content['contentType'],
     status: 'idea' as Content['status'],
-    assignedTo: users[0]?.id || '',
+    assignedTo: activeUsers[0]?.id || users[0]?.id || '',
     startDate: today,
     dueDate: tomorrowStr,
     priority: 'medium' as Content['priority'],
+    designBrief: '',
+    inspiration: '',
+    design: '',
+    textContent: '',
+    driveLink: '',
+    notes: '',
   });
 
   const handleEditStart = (contentId: string, field: string, currentValue: string) => {
@@ -79,7 +101,7 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
 
     // Optimistic update
     const updatedReels = localReels.map(r =>
-      r.id === editingCell.id ? { ...r, ...updates } : r
+      String(r.id) === String(editingCell.id) ? { ...r, ...updates } : r
     );
     setLocalReels(updatedReels);
     setEditingCell(null);
@@ -92,7 +114,10 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
     try {
       await updateContent(editingCell.id, updates);
     } catch (error) {
-      setLocalReels(reels); // revert
+      // Revert the optimistic update
+      setLocalReels(localReels.map(r =>
+        String(r.id) === String(editingCell.id) ? { ...r, [actualFieldName]: reels.find(item => String(item.id) === String(editingCell.id))?.[actualFieldName] } : r
+      ));
       toast.error('Failed to update reel');
     }
   };
@@ -107,10 +132,16 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
       title: '',
       contentType: 'video',
       status: 'idea',
-      assignedTo: users[0]?.id || '',
+      assignedTo: activeUsers[0]?.id || users[0]?.id || '',
       startDate: today,
       dueDate: tomorrowStr,
       priority: 'medium',
+      designBrief: '',
+      inspiration: '',
+      design: '',
+      textContent: '',
+      driveLink: '',
+      notes: '',
     });
     setIsAddModalOpen(true);
   };
@@ -142,6 +173,12 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
         month,
         isReel: true, // This is the key difference!
         readyForCalendar: false,
+        designBrief: formData.designBrief,
+        inspiration: formData.inspiration,
+        design: formData.design,
+        textContent: formData.textContent,
+        driveLink: formData.driveLink,
+        notes: formData.notes,
       });
       
       toast.success('Reel added! 🎬');
@@ -159,30 +196,64 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
   };
 
   const handleMarkReady = async (contentId: string) => {
+    const item = localReels.find(c => String(c.id) === String(contentId));
+    
+    // Optimistic update
+    const updatedReels = localReels.map(r =>
+      String(r.id) === String(contentId) ? { ...r, readyForCalendar: true, status: 'approved' as Content['status'] } : r
+    );
+    setLocalReels(updatedReels);
+    toast.success(`${item?.title} is ready for calendar! 📅`, {
+      description: 'You can now drag it to the social calendar',
+    });
+
+    // Update in backend
     try {
-      const item = localReels.find(c => c.id === contentId);
       await updateContent(contentId, { readyForCalendar: true, status: 'approved' });
-      toast.success(`${item?.title} is ready for calendar! 📅`, {
-        description: 'You can now drag it to the social calendar',
-      });
     } catch (error) {
+      // Revert
+      setLocalReels(localReels.map(r =>
+        String(r.id) === String(contentId) ? { ...r, readyForCalendar: false, status: item?.status || 'idea' as Content['status'] } : r
+      ));
       toast.error('Failed to mark reel as ready');
     }
   };
 
   const handleStatusChange = async (contentId: string, newStatus: string) => {
+    const oldStatus = localReels.find(r => String(r.id) === String(contentId))?.status;
+    const oldReady = localReels.find(r => String(r.id) === String(contentId))?.readyForCalendar;
+    
+    // If status is changed to something other than approved/scheduled/published, clear readyForCalendar
+    const validReadyStatuses = ['approved', 'scheduled', 'published'];
+    const shouldClearReady = !validReadyStatuses.includes(newStatus);
+    
     // Optimistic update
     const updatedReels = localReels.map(r =>
-      r.id === contentId ? { ...r, status: newStatus as Content['status'] } : r
+      String(r.id) === String(contentId) ? { 
+        ...r, 
+        status: newStatus as Content['status'],
+        readyForCalendar: shouldClearReady ? false : r.readyForCalendar
+      } : r
     );
     setLocalReels(updatedReels);
     toast.success('Status updated!');
 
     // Update in backend
     try {
-      await updateContent(contentId, { status: newStatus as Content['status'] });
+      const updates: any = { status: newStatus as Content['status'] };
+      if (shouldClearReady) {
+        updates.readyForCalendar = false;
+      }
+      await updateContent(contentId, updates);
     } catch (error) {
-      setLocalReels(reels); // revert
+      // Revert to old status and ready state
+      setLocalReels(localReels.map(r =>
+        String(r.id) === String(contentId) ? { 
+          ...r, 
+          status: oldStatus as Content['status'],
+          readyForCalendar: oldReady || false
+        } : r
+      ));
       toast.error('Failed to update status');
     }
   };
@@ -246,21 +317,38 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
 
   // Editable cell component
   const EditableCell = ({ 
-    content: contentItem, 
-    field, 
-    value 
+    contentId,
+    field
   }: { 
-    content: Content; 
-    field: string; 
-    value: string 
+    contentId: string;
+    field: string;
   }) => {
-    const canEdit = canUserEdit(userRole, field as ColumnName);
-    const isEditing = editingCell?.id === contentItem.id && editingCell?.field === field;
+    // Get current value from localReels for reactivity
+    const contentItem = localReels.find(r => String(r.id) === String(contentId));
+    if (!contentItem) return null;
+    
+    // Map field to actual property
+    const fieldMap: Record<string, keyof Content> = {
+      'design-brief': 'designBrief',
+      'inspiration': 'inspiration',
+      'design': 'design',
+      'text-content': 'textContent',
+      'drive-link': 'driveLink',
+      'notes': 'notes',
+    };
+    const actualField = fieldMap[field] || field;
+    const value = (contentItem[actualField as keyof Content] as string) || '';
+    
+    // Admin always has edit access
+    const canEdit = userRole === 'admin' || canUserEdit(userRole, field as ColumnName);
+    const isEditing = editingCell?.id === String(contentId) && editingCell?.field === field;
 
     if (!canEdit) {
       return (
         <td className="px-4 py-3 border-b border-[#563EB7]/10">
-          <div className="text-gray-500 text-sm">{value || '—'}</div>
+          <div className="text-gray-500 text-sm" title={`You don't have permission to edit ${field}`}>
+            {value || '—'}
+          </div>
         </td>
       );
     }
@@ -298,7 +386,7 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
         <div className="flex items-center justify-between">
           <span className="text-white text-sm">{value || '—'}</span>
           <button
-            onClick={() => handleEditStart(contentItem.id, field, value)}
+            onClick={() => handleEditStart(String(contentId), field, value)}
             className="opacity-0 group-hover:opacity-100 p-1 text-[#563EB7] hover:text-[#6d4dd4] transition-all"
           >
             <Edit2 size={14} />
@@ -370,7 +458,8 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
                   </td>
                 </tr>
               ) : (
-                localReels.map((item) => {
+                localReels.map((item, index) => {
+                  // Use item directly from localReels for full reactivity
                   const statusInfo = getStatusBadge(item.status);
                   
                   return (
@@ -386,12 +475,12 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
                           </div>
                         </div>
                       </td>
-                      <EditableCell content={item} field="design-brief" value={item.designBrief || ''} />
-                      <EditableCell content={item} field="inspiration" value={item.inspiration || ''} />
-                      <EditableCell content={item} field="design" value={item.design || ''} />
-                      <EditableCell content={item} field="text-content" value={item.textContent || ''} />
-                      <EditableCell content={item} field="drive-link" value={item.driveLink || ''} />
-                      <EditableCell content={item} field="notes" value={item.notes || ''} />
+                      <EditableCell contentId={String(item.id)} field="design-brief" />
+                      <EditableCell contentId={String(item.id)} field="inspiration" />
+                      <EditableCell contentId={String(item.id)} field="design" />
+                      <EditableCell contentId={String(item.id)} field="text-content" />
+                      <EditableCell contentId={String(item.id)} field="drive-link" />
+                      <EditableCell contentId={String(item.id)} field="notes" />
                       <td className="px-4 py-3 border-b border-[#563EB7]/10">
                         <select
                           value={item.status}
@@ -444,7 +533,7 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
                           )}
 
                           {/* Mark as Ready Button */}
-                          {!item.readyForCalendar && (item.status === 'approved' || item.status === 'review') && (
+                          {!item.readyForCalendar && ['approved', 'scheduled', 'published'].includes(item.status) && (
                             <button
                               onClick={() => handleMarkReady(item.id)}
                               className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors flex items-center gap-1"
@@ -541,7 +630,7 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
               label="Assigned To"
               value={editingReel.assignedTo}
               onChange={(e) => setEditingReel({ ...editingReel, assignedTo: e.target.value })}
-              options={users.map(u => ({ value: u.id, label: u.name }))}
+              options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
         </Modal>
@@ -636,11 +725,60 @@ export default function ReelsPlanTable({ reels, projectId, month, userRole, onRe
             label="Assign To"
             value={formData.assignedTo}
             onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-            options={users.map(u => ({ 
+            options={activeUsers.map(u => ({ 
               value: u.id, 
               label: u.name 
             }))}
           />
+
+          {/* Additional Reel Fields */}
+          <div className="border-t border-[#563EB7]/20 pt-4 mt-4">
+            <h3 className="text-sm font-semibold text-white mb-3">Reel Details</h3>
+            
+            <div className="space-y-3">
+              <Input
+                label="Design Brief"
+                value={formData.designBrief}
+                onChange={(e) => setFormData({ ...formData, designBrief: e.target.value })}
+                placeholder="Brief description of design requirements"
+              />
+
+              <Input
+                label="Inspiration"
+                value={formData.inspiration}
+                onChange={(e) => setFormData({ ...formData, inspiration: e.target.value })}
+                placeholder="Links or references for inspiration"
+              />
+
+              <Input
+                label="Design"
+                value={formData.design}
+                onChange={(e) => setFormData({ ...formData, design: e.target.value })}
+                placeholder="Design file link or details"
+              />
+
+              <Input
+                label="Text Content"
+                value={formData.textContent}
+                onChange={(e) => setFormData({ ...formData, textContent: e.target.value })}
+                placeholder="Caption or text for the reel"
+              />
+
+              <Input
+                label="Drive Link"
+                value={formData.driveLink}
+                onChange={(e) => setFormData({ ...formData, driveLink: e.target.value })}
+                placeholder="Google Drive or file link"
+              />
+
+              <Input
+                label="Notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Additional notes"
+              />
+            </div>
+          </div>
         </div>
       </Modal>
     </div>

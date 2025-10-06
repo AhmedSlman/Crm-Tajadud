@@ -18,7 +18,7 @@ import { Task } from '@/types';
 import { exportToCSV, searchInObject } from '@/lib/utils';
 
 export default function TasksPage() {
-  const { tasks, projects, users, addTask, updateTask, deleteTask, currentUser } = useData();
+  const { tasks, projects, users, activeUsers, addTask, updateTask, deleteTask, currentUser } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -513,7 +513,7 @@ export default function TasksPage() {
               label="Assigned To"
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-              options={users.filter(u => u && u.id).map(u => ({ value: u.id, label: u.name }))}
+              options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">

@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function ProjectsPage() {
-  const { projects, clients, users, addProject, updateProject, deleteProject, loading } = useData();
+  const { projects, clients, users, activeUsers, addProject, updateProject, deleteProject, loading } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -383,7 +383,7 @@ export default function ProjectsPage() {
               label="Project Manager"
               value={formData.projectManager}
               onChange={(e) => setFormData({ ...formData, projectManager: e.target.value })}
-              options={users.map(u => ({ value: u.id, label: u.name }))}
+              options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
           <Input

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { Content } from '@/types';
 import { FileText, Video, CheckCircle } from 'lucide-react';
@@ -16,6 +16,12 @@ type SocialCalendarViewProps = {
 export default function SocialCalendarView({ month, projectId, content, onRefresh }: SocialCalendarViewProps) {
   const { updateContent } = useData();
   const [draggedItem, setDraggedItem] = useState<Content | null>(null);
+  const [localContent, setLocalContent] = useState<Content[]>(content);
+
+  // Update local content when props change
+  useEffect(() => {
+    setLocalContent(content);
+  }, [content]);
 
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
@@ -28,21 +34,28 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Get ready content (approved and ready for calendar, not yet scheduled)
-  const readyContent = content.filter(c => 
-    c.projectId === projectId && 
-    c.readyForCalendar === true &&
+  const readyContent = localContent.filter(c => 
+    String(c.projectId) === String(projectId) && 
+    !!c.readyForCalendar &&
     !c.publishDate // Only show content that hasn't been scheduled yet
   );
 
   // Get content for calendar (scheduled or published)
-  const calendarContent = content.filter(c => 
-    c.projectId === projectId && 
-    (c.status === 'scheduled' || c.status === 'published')
+  const calendarContent = localContent.filter(c => 
+    String(c.projectId) === String(projectId) && 
+    (c.status === 'scheduled' || c.status === 'published') &&
+    !!c.publishDate // Must have publish date
   );
 
   const getContentForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return calendarContent.filter(c => c.publishDate === dateStr);
+    const items = calendarContent.filter(c => {
+      if (!c.publishDate) return false;
+      // Handle both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS" formats
+      const pubDate = c.publishDate.split(' ')[0].split('T')[0];
+      return pubDate === dateStr;
+    });
+    return items;
   };
 
   const calendarDays = useMemo(() => {
@@ -74,36 +87,62 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
 
     const dateStr = date.toISOString().split('T')[0];
     
+    // Optimistic update
+    const updatedContent = localContent.map(c =>
+      String(c.id) === String(draggedItem.id) ? {
+        ...c,
+        publishDate: `${dateStr} 00:00:00`,
+        status: 'scheduled' as Content['status']
+      } : c
+    );
+    setLocalContent(updatedContent);
+    
+    toast.success(`${draggedItem.title} scheduled! 📅`, {
+      description: `Will be published on ${new Date(dateStr).toLocaleDateString()}`,
+    });
+    setDraggedItem(null);
+    
+    // Update in backend
     try {
       await updateContent(draggedItem.id, {
         publishDate: dateStr,
         status: 'scheduled',
       });
-
-      toast.success(`${draggedItem.title} scheduled! 📅`, {
-        description: `Will be published on ${new Date(dateStr).toLocaleDateString()}`,
-      });
-      
-      // Refresh project data
-      if (onRefresh) onRefresh();
     } catch (error) {
+      // Revert on error
+      setLocalContent(content);
       toast.error('Failed to schedule content');
     }
-
-    setDraggedItem(null);
   };
 
   const handleMarkPublished = async (contentId: string) => {
-    const item = content.find(c => c.id === contentId);
+    const item = localContent.find(c => String(c.id) === String(contentId));
+    const oldStatus = item?.status;
+    
+    // Optimistic update
+    const updatedContent = localContent.map(c =>
+      String(c.id) === String(contentId) ? {
+        ...c,
+        status: 'published' as Content['status']
+      } : c
+    );
+    setLocalContent(updatedContent);
+    
+    toast.success(`${item?.title} published! 🎉`, {
+      description: 'Content is now live',
+    });
+    
+    // Update in backend
     try {
       await updateContent(contentId, { status: 'published' });
-      toast.success(`${item?.title} published! 🎉`, {
-        description: 'Content is now live',
-      });
-      
-      // Refresh project data
-      if (onRefresh) onRefresh();
     } catch (error) {
+      // Revert on error
+      setLocalContent(localContent.map(c =>
+        String(c.id) === String(contentId) ? {
+          ...c,
+          status: oldStatus as Content['status']
+        } : c
+      ));
       toast.error('Failed to publish content');
     }
   };
@@ -135,7 +174,7 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
                   className="bg-[#1a1333] border border-[#563EB7]/20 rounded-lg p-3 cursor-move hover:border-[#563EB7]/40 transition-all"
                 >
                   <div className="flex items-start gap-2">
-                    {item.isReel ? (
+                    {!!item.isReel ? (
                       <Video size={16} className="text-purple-400 flex-shrink-0 mt-0.5" />
                     ) : (
                       <FileText size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
@@ -143,7 +182,7 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white font-medium truncate">{item.title}</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {item.isReel ? 'Reel' : 'Content'}
+                        {!!item.isReel ? 'Reel' : 'Content'}
                       </p>
                     </div>
                   </div>
@@ -206,7 +245,7 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
                             : 'bg-blue-500/20 border border-blue-500/30'
                         }`}
                       >
-                        {item.isReel ? (
+                        {!!item.isReel ? (
                           <Video size={10} className="flex-shrink-0" />
                         ) : (
                           <FileText size={10} className="flex-shrink-0" />

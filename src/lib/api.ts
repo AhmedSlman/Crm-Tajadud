@@ -4,6 +4,23 @@ import config from './config';
 
 const API_BASE_URL = config.api.baseUrl;
 
+// Helper function للتحويل من camelCase إلى snake_case
+const toSnakeCase = (obj: any): any => {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(toSnakeCase);
+  
+  const snakeObj: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    // Skip undefined values
+    if (value === undefined) continue;
+    
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    snakeObj[snakeKey] = toSnakeCase(value);
+  }
+  return snakeObj;
+};
+
 // Helper function للحصول على التوكن
 const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
@@ -35,6 +52,11 @@ const createHeaders = (isClient = false): HeadersInit => {
 const handleResponse = async (response: Response, options?: { silent404?: boolean }) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // Debug log
+    if (response.status === 422 || response.status === 403) {
+      console.log('Error response:', errorData);
+    }
     
     // استخراج رسالة الخطأ من Laravel
     let errorMessage = errorData.error || errorData.message;
@@ -736,7 +758,7 @@ export const contentsAPI = {
     const response = await fetch(`${API_BASE_URL}/contents`, {
       method: 'POST',
       headers: createHeaders(),
-      body: JSON.stringify(contentData),
+      body: JSON.stringify(toSnakeCase(contentData)),
     });
 
     return handleResponse(response);
@@ -747,7 +769,7 @@ export const contentsAPI = {
     const response = await fetch(`${API_BASE_URL}/contents/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
-      body: JSON.stringify(contentData),
+      body: JSON.stringify(toSnakeCase(contentData)),
     });
 
     return handleResponse(response);
@@ -940,6 +962,37 @@ export const permissionsAPI = {
   // حذف دور مخصص
   async deleteCustomRole(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/permissions/roles/${id}`, {
+      method: 'DELETE',
+      headers: createHeaders(),
+    });
+
+    await handleResponse(response);
+  },
+
+  // الحصول على Matrix كامل
+  async getMatrix(): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/permissions/matrix`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+  // الحصول على الأعمدة المتاحة
+  async getColumns(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/permissions/columns`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    const data = await handleResponse(response);
+    return data.columns || [];
+  },
+
+  // حذف صلاحيات دور كامل
+  async deleteRolePermissions(role: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/permissions/role/${role}`, {
       method: 'DELETE',
       headers: createHeaders(),
     });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
@@ -15,10 +15,16 @@ import { Campaign } from '@/types';
 import { toast } from 'sonner';
 
 export default function CampaignsPage() {
-  const { campaigns, projects, users, addCampaign, updateCampaign, deleteCampaign, loading } = useData();
+  const { campaigns, projects, users, activeUsers, addCampaign, updateCampaign, deleteCampaign, loading } = useData();
+  const [localCampaigns, setLocalCampaigns] = useState<Campaign[]>(campaigns);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Sync with global campaigns
+  useEffect(() => {
+    setLocalCampaigns(campaigns);
+  }, [campaigns]);
   const [formData, setFormData] = useState({
     name: '',
     projectId: '',
@@ -334,7 +340,7 @@ export default function CampaignsPage() {
               label="Responsible Person"
               value={formData.responsiblePerson}
               onChange={(e) => setFormData({ ...formData, responsiblePerson: e.target.value })}
-              options={users.map(u => ({ value: u.id, label: u.name }))}
+              options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
             />
             <Input
               label="Progress (%)"

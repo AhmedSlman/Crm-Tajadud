@@ -20,7 +20,7 @@ type CampaignContentProps = {
 };
 
 export default function CampaignContent({ campaigns, projectId, onRefresh }: CampaignContentProps) {
-  const { addCampaign, updateCampaign, deleteCampaign, users } = useData();
+  const { addCampaign, updateCampaign, deleteCampaign, users, activeUsers } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
@@ -34,7 +34,7 @@ export default function CampaignContent({ campaigns, projectId, onRefresh }: Cam
     endDate: '',
     budget: 0,
     status: 'planned' as Campaign['status'],
-    responsiblePerson: users[0]?.id || '',
+    responsiblePerson: activeUsers[0]?.id || users[0]?.id || '',
   });
 
   const handleAddCampaign = async () => {
@@ -72,7 +72,7 @@ export default function CampaignContent({ campaigns, projectId, onRefresh }: Cam
         endDate: '',
         budget: 0,
         status: 'planned',
-        responsiblePerson: users[0]?.id || '',
+        responsiblePerson: activeUsers[0]?.id || users[0]?.id || '',
       });
       
       // Refresh project data
@@ -382,7 +382,7 @@ export default function CampaignContent({ campaigns, projectId, onRefresh }: Cam
             label="Responsible Person"
             value={formData.responsiblePerson}
             onChange={(e) => setFormData({ ...formData, responsiblePerson: e.target.value })}
-            options={users.map(u => ({ value: u.id, label: u.name }))}
+            options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
           />
         </div>
       </Modal>
@@ -495,7 +495,7 @@ export default function CampaignContent({ campaigns, projectId, onRefresh }: Cam
               label="Responsible Person"
               value={editingCampaign.responsiblePerson}
               onChange={(e) => setEditingCampaign({ ...editingCampaign, responsiblePerson: e.target.value })}
-              options={users.map(u => ({ value: u.id, label: u.name }))}
+              options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
         </Modal>

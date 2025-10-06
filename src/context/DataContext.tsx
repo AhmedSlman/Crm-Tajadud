@@ -13,6 +13,7 @@ type DataContextType = {
   campaigns: Campaign[];
   content: Content[];
   users: User[];
+  activeUsers: User[];
   notifications: Notification[];
   currentUser: User;
   loading: boolean;
@@ -42,6 +43,7 @@ type DataContextType = {
   rejectUser: (userId: string) => Promise<void>;
   suspendUser: (userId: string) => Promise<void>;
   activateUser: (userId: string) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
   updateUser: (id: string, user: Partial<User>) => Promise<void>;
   addCustomRole: (role: Omit<CustomRole, 'id' | 'createdAt'>) => Promise<void>;
   updateCustomRole: (id: string, role: Partial<CustomRole>) => Promise<void>;
@@ -52,28 +54,17 @@ type DataContextType = {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Default permissions
+// Minimal default permissions (only for Admin - before API loads)
 const getDefaultPermissions = (): RolePermission[] => {
-  const roles: UserRole[] = ['admin', 'account-manager', 'graphic-designer', 'social-media', 'content-writer', 'video-editor', 'ads-specialist', 'seo-specialist'];
   const columns: ColumnName[] = ['design-brief', 'inspiration', 'design', 'text-content', 'drive-link', 'notes', 'status'];
   
-  const defaultPerms: Record<string, UserRole[]> = {
-    'design-brief': ['admin', 'account-manager', 'social-media'],
-    'inspiration': ['admin', 'account-manager', 'social-media', 'graphic-designer'],
-    'design': ['admin', 'graphic-designer'],
-    'text-content': ['admin', 'account-manager', 'social-media', 'content-writer'],
-    'drive-link': ['admin', 'account-manager', 'graphic-designer', 'video-editor'],
-    'notes': ['admin', 'account-manager', 'social-media'],
-    'status': ['admin', 'account-manager', 'social-media'],
-  };
-
   const permissions: RolePermission[] = [];
-  roles.forEach(role => {
-    columns.forEach(column => {
-      permissions.push({
-        role,
-        column,
-        canEdit: defaultPerms[column]?.includes(role) || false
-      });
+  // Only create permissions for Admin (always true)
+  columns.forEach(column => {
+    permissions.push({
+      role: 'admin',
+      column,
+      canEdit: true
     });
   });
 
@@ -115,16 +106,50 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isAuthenticated) {
       refreshData();
-      loadPermissions();
+      // Only load permissions for admin users
+      if (authUser?.role === 'admin') {
+        loadPermissions();
+      }
     }
   }, [isAuthenticated]);
 
   // Load permissions from API
   const loadPermissions = async () => {
     try {
-      const permsData = await api.permissions.getAll();
+      const [permsData, rolesData] = await Promise.all([
+        api.permissions.getAll(),
+        api.permissions.getAllRoles()
+      ]);
+      
       if (permsData && permsData.length > 0) {
-        setPermissions(permsData);
+        // Normalize permissions (convert snake_case to camelCase)
+        const normalizedPerms = permsData.map((p: any) => ({
+          role: p.role,
+          column: p.column,
+          canEdit: p.can_edit ?? p.canEdit ?? false,
+        }));
+        
+        setPermissions(normalizedPerms);
+        // حفظ في localStorage للـ persistence
+        localStorage.setItem('permissions', JSON.stringify(normalizedPerms));
+      }
+      
+      if (rolesData && rolesData.roles) {
+        // Extract only custom roles from the API response
+        const customRolesList = rolesData.roles
+          .filter((role: any) => role.is_custom)
+          .map((role: any) => ({
+            id: String(role.id), // Backend sends id as number, convert to string
+            name: role.value,
+            label: role.label,
+            emoji: role.emoji,
+            isCustom: true,
+            createdBy: 'admin',
+            createdAt: new Date().toISOString(),
+          }));
+        setCustomRoles(customRolesList);
+        // حفظ في localStorage
+        localStorage.setItem('customRoles', JSON.stringify(customRolesList));
       }
     } catch (error) {
       console.error('Error loading permissions:', error);
@@ -132,11 +157,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('customRoles', JSON.stringify(customRoles));
-    }
-  }, [customRoles]);
+  // No longer need this - loadPermissions handles localStorage sync
+  // useEffect(() => {
+  //   if (typeof window !== 'undefined') {
+  //     localStorage.setItem('customRoles', JSON.stringify(customRoles));
+  //   }
+  // }, [customRoles]);
 
   // Refresh data from API
   const refreshData = async () => {
@@ -300,7 +326,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const newTask = await api.tasks.create({
         title: taskData.title,
-        description: taskData.description,
+        description: taskData.description || '', // Default to empty string if undefined
         type: taskData.type,
         status: taskData.status,
         priority: taskData.priority,
@@ -325,7 +351,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const updated = await api.tasks.update(id, {
         title: updatedTask.title,
-        description: updatedTask.description,
+        description: updatedTask.description !== undefined ? updatedTask.description : undefined,
         type: updatedTask.type,
         status: updatedTask.status,
         priority: updatedTask.priority,
@@ -506,6 +532,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
+  // Get active users only (for assignment dropdowns)
+  const activeUsers = users.filter(u => u.status === 'active');
+
   // Permissions management
   const canUserEdit = (role: UserRole, column: ColumnName): boolean => {
     const permission = permissions.find(p => p.role === role && p.column === column);
@@ -514,8 +543,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updatePermission = async (role: UserRole, column: ColumnName, canEdit: boolean) => {
     try {
+      // Update in backend
       await api.permissions.updatePermission(role, column, canEdit);
       
+      // Update local state immediately (optimistic update)
       const updated = permissions.map(p => 
         p.role === role && p.column === column 
           ? { ...p, canEdit, can_edit: canEdit } 
@@ -523,11 +554,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       );
       setPermissions(updated);
       
-      // حفظ نسخة احتياطية في localStorage
+      // Also save to localStorage for persistence
       localStorage.setItem('permissions', JSON.stringify(updated));
     } catch (error) {
       console.error('Error updating permission:', error);
-      toast.error('فشل في تحديث الصلاحية');
+      toast.error('Failed to update permission');
       throw error;
     }
   };
@@ -568,35 +599,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Custom Roles management
   const addCustomRole = async (roleData: Omit<CustomRole, 'id' | 'createdAt'>) => {
     try {
-      const newRole = await api.permissions.addCustomRole({
+      await api.permissions.addCustomRole({
         name: roleData.name,
         label: roleData.label,
         emoji: roleData.emoji,
         created_by: roleData.createdBy || currentUser?.name || 'admin'
       });
       
-      setCustomRoles([...customRoles, newRole.role]);
-      toast.success('تم إضافة الدور المخصص بنجاح');
-      await loadPermissions(); // إعادة تحميل الصلاحيات
+      // Reload from API to get the new role with correct ID
+      await loadPermissions();
+      
+      // Don't show toast here - let component handle it
     } catch (error) {
       console.error('Error adding custom role:', error);
-      toast.error('فشل في إضافة الدور المخصص');
       throw error;
     }
   };
 
   const updateCustomRole = async (id: string, updatedRole: Partial<CustomRole>) => {
     try {
-      const updated = await api.permissions.updateCustomRole(id, {
+      await api.permissions.updateCustomRole(id, {
         label: updatedRole.label,
         emoji: updatedRole.emoji
       });
       
-      setCustomRoles(customRoles.map(r => r.id === id ? { ...r, ...updated.role } : r));
-      toast.success('تم تحديث الدور المخصص بنجاح');
+      // Reload from API to ensure sync
+      await loadPermissions();
+      
+      // Don't show toast here - let component handle it
     } catch (error) {
       console.error('Error updating custom role:', error);
-      toast.error('فشل في تحديث الدور المخصص');
       throw error;
     }
   };
@@ -606,6 +638,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       await api.permissions.deleteCustomRole(id);
       
       const roleToDelete = customRoles.find(r => r.id === id);
+      
+      // Update local state immediately
       setCustomRoles(customRoles.filter(r => r.id !== id));
       
       // حذف الصلاحيات المرتبطة بهذا الدور
@@ -613,34 +647,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setPermissions(permissions.filter(p => p.role !== roleToDelete.name));
       }
       
-      toast.success('تم حذف الدور المخصص بنجاح');
-    } catch (error) {
+      // Reload from API to ensure sync
+      await loadPermissions();
+      
+      // Don't show toast here - let the calling component handle it
+    } catch (error: any) {
       console.error('Error deleting custom role:', error);
-      toast.error('فشل في حذف الدور المخصص');
+      // Re-throw the error with the message from the API
       throw error;
     }
   };
 
   const getAllRoles = () => {
-    const defaultRoles = [
-      { value: 'admin', label: 'Admin', emoji: '👑', isCustom: false },
-      { value: 'account-manager', label: 'Account Manager', emoji: '👔', isCustom: false },
-      { value: 'graphic-designer', label: 'Graphic Designer', emoji: '🎨', isCustom: false },
-      { value: 'social-media', label: 'Social Media', emoji: '📱', isCustom: false },
-      { value: 'content-writer', label: 'Content Writer', emoji: '✍️', isCustom: false },
-      { value: 'video-editor', label: 'Video Editor', emoji: '🎬', isCustom: false },
-      { value: 'ads-specialist', label: 'Ads Specialist', emoji: '📢', isCustom: false },
-      { value: 'seo-specialist', label: 'SEO Specialist', emoji: '🔍', isCustom: false },
+    // Admin فقط هو الـ role الثابت الوحيد
+    const adminRole = [
+      { id: null, value: 'admin', label: 'Admin', emoji: '👑', isCustom: false, isAdmin: true },
     ];
 
+    // جميع الأدوار الأخرى من custom_roles (قابلة للحذف)
     const customRolesList = customRoles.map(role => ({
+      id: role.id,
       value: role.name,
       label: role.label,
       emoji: role.emoji,
       isCustom: true,
+      isAdmin: false,
     }));
 
-    return [...defaultRoles, ...customRolesList];
+    return [...adminRole, ...customRolesList];
   };
 
   const approveUser = async (userId: string) => {
@@ -691,6 +725,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteUser = async (userId: string) => {
+    try {
+      await api.users.delete(userId);
+      // Update local state
+      setUsers(users.filter(u => u.id !== userId));
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  };
+
   return (
     <DataContext.Provider value={{
       clients,
@@ -699,6 +744,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       campaigns,
       content,
       users,
+      activeUsers,
       notifications,
       currentUser: currentUser || {} as User,
       loading,
@@ -727,6 +773,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       rejectUser,
       suspendUser,
       activateUser,
+      deleteUser,
       updateUser,
       customRoles,
       addCustomRole,

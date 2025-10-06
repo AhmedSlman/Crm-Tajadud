@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useData } from '@/context/DataContext';
 import { Content, UserRole, ColumnName } from '@/types';
 import Button from '@/components/Button';
@@ -26,7 +26,7 @@ export default function ContentPlanTable({
   userRole,
   onRefresh
 }: ContentPlanTableProps) {
-  const { addContent, updateContent, deleteContent, users, canUserEdit } = useData();
+  const { addContent, updateContent, deleteContent, users, activeUsers, canUserEdit } = useData();
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -39,9 +39,25 @@ export default function ContentPlanTable({
   const [localContent, setLocalContent] = useState<Content[]>(content);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   
-  // Update local content when props change, but exclude deleted items
+  // Update local content when props change (only for new/removed items)
   useEffect(() => {
-    setLocalContent(content.filter(c => !deletedIds.has(String(c.id))));
+    const filteredContent = content.filter(c => !deletedIds.has(String(c.id)));
+    
+    // Check if items were added or removed
+    const localIds = new Set(localContent.map(c => String(c.id)));
+    const newIds = new Set(filteredContent.map(c => String(c.id)));
+    
+    const hasNewItems = filteredContent.some(c => !localIds.has(String(c.id)));
+    const hasRemovedItems = localContent.some(c => !newIds.has(String(c.id)));
+    
+    if (hasNewItems || hasRemovedItems) {
+      // Only sync when items are added/removed, preserve local updates
+      setLocalContent(filteredContent.map(item => {
+        const localItem = localContent.find(l => String(l.id) === String(item.id));
+        return localItem || item;
+      }));
+    }
+    // Don't update if only data changed (preserve optimistic updates)
   }, [content, deletedIds]);
   
   const today = new Date().toISOString().split('T')[0];
@@ -53,10 +69,16 @@ export default function ContentPlanTable({
     title: '',
     contentType: 'post' as Content['contentType'],
     status: 'idea' as Content['status'],
-    assignedTo: users[0]?.id || '',
+    assignedTo: activeUsers[0]?.id || users[0]?.id || '',
     startDate: today,
     dueDate: tomorrowStr,
     priority: 'medium' as Content['priority'],
+    designBrief: '',
+    inspiration: '',
+    design: '',
+    textContent: '',
+    driveLink: '',
+    notes: '',
   });
 
   const handleEditStart = (contentId: string, field: string, currentValue: string) => {
@@ -85,7 +107,7 @@ export default function ContentPlanTable({
 
     // Optimistic update
     const updatedContent = localContent.map(c =>
-      c.id === editingCell.id ? { ...c, ...updates } : c
+      String(c.id) === String(editingCell.id) ? { ...c, ...updates } : c
     );
     setLocalContent(updatedContent);
     setEditingCell(null);
@@ -98,7 +120,10 @@ export default function ContentPlanTable({
     try {
       await updateContent(editingCell.id, updates);
     } catch (error) {
-      setLocalContent(content); // revert
+      // Revert the optimistic update
+      setLocalContent(localContent.map(c =>
+        c.id === editingCell.id ? { ...c, [actualFieldName]: content.find(item => item.id === editingCell.id)?.[actualFieldName] } : c
+      ));
       toast.error('Failed to update content');
     }
   };
@@ -113,10 +138,16 @@ export default function ContentPlanTable({
       title: '',
       contentType: 'post',
       status: 'idea',
-      assignedTo: users[0]?.id || '',
+      assignedTo: activeUsers[0]?.id || users[0]?.id || '',
       startDate: today,
       dueDate: tomorrowStr,
       priority: 'medium',
+      designBrief: '',
+      inspiration: '',
+      design: '',
+      textContent: '',
+      driveLink: '',
+      notes: '',
     });
     setIsAddModalOpen(true);
   };
@@ -148,6 +179,12 @@ export default function ContentPlanTable({
         month,
         isReel: false,
         readyForCalendar: false,
+        designBrief: formData.designBrief,
+        inspiration: formData.inspiration,
+        design: formData.design,
+        textContent: formData.textContent,
+        driveLink: formData.driveLink,
+        notes: formData.notes,
       });
       
       toast.success('Content added! 🎉');
@@ -165,30 +202,64 @@ export default function ContentPlanTable({
   };
 
   const handleMarkReady = async (contentId: string) => {
+    const item = localContent.find(c => c.id === contentId);
+    
+    // Optimistic update
+    const updatedContent = localContent.map(c =>
+      c.id === contentId ? { ...c, readyForCalendar: true, status: 'approved' as Content['status'] } : c
+    );
+    setLocalContent(updatedContent);
+    toast.success(`${item?.title} is ready for calendar! 📅`, {
+      description: 'You can now drag it to the social calendar',
+    });
+
+    // Update in backend
     try {
-      const item = content.find(c => c.id === contentId);
       await updateContent(contentId, { readyForCalendar: true, status: 'approved' });
-      toast.success(`${item?.title} is ready for calendar! 📅`, {
-        description: 'You can now drag it to the social calendar',
-      });
     } catch (error) {
+      // Revert
+      setLocalContent(localContent.map(c =>
+        c.id === contentId ? { ...c, readyForCalendar: false, status: item?.status || 'idea' as Content['status'] } : c
+      ));
       toast.error('Failed to mark content as ready');
     }
   };
 
   const handleStatusChange = async (contentId: string, newStatus: string) => {
+    const oldStatus = localContent.find(c => c.id === contentId)?.status;
+    const oldReady = localContent.find(c => c.id === contentId)?.readyForCalendar;
+    
+    // If status is changed to something other than approved/scheduled/published, clear readyForCalendar
+    const validReadyStatuses = ['approved', 'scheduled', 'published'];
+    const shouldClearReady = !validReadyStatuses.includes(newStatus);
+    
     // Optimistic update
     const updatedContent = localContent.map(c =>
-      c.id === contentId ? { ...c, status: newStatus as Content['status'] } : c
+      c.id === contentId ? { 
+        ...c, 
+        status: newStatus as Content['status'],
+        readyForCalendar: shouldClearReady ? false : c.readyForCalendar
+      } : c
     );
     setLocalContent(updatedContent);
     toast.success('Status updated!');
 
     // Update in backend
     try {
-      await updateContent(contentId, { status: newStatus as Content['status'] });
+      const updates: any = { status: newStatus as Content['status'] };
+      if (shouldClearReady) {
+        updates.readyForCalendar = false;
+      }
+      await updateContent(contentId, updates);
     } catch (error) {
-      setLocalContent(content); // revert
+      // Revert to old status and ready state
+      setLocalContent(localContent.map(c =>
+        c.id === contentId ? { 
+          ...c, 
+          status: oldStatus as Content['status'],
+          readyForCalendar: oldReady || false
+        } : c
+      ));
       toast.error('Failed to update status');
     }
   };
@@ -252,21 +323,38 @@ export default function ContentPlanTable({
 
   // Editable cell component
   const EditableCell = ({ 
-    content: contentItem, 
-    field, 
-    value 
+    contentId,
+    field
   }: { 
-    content: Content; 
-    field: string; 
-    value: string 
+    contentId: string;
+    field: string;
   }) => {
-    const canEdit = canUserEdit(userRole, field as ColumnName);
-    const isEditing = editingCell?.id === contentItem.id && editingCell?.field === field;
+    // Get current value from localContent for reactivity
+    const contentItem = localContent.find(c => String(c.id) === String(contentId));
+    if (!contentItem) return null;
+    
+    // Map field to actual property
+    const fieldMap: Record<string, keyof Content> = {
+      'design-brief': 'designBrief',
+      'inspiration': 'inspiration',
+      'design': 'design',
+      'text-content': 'textContent',
+      'drive-link': 'driveLink',
+      'notes': 'notes',
+    };
+    const actualField = fieldMap[field] || field;
+    const value = (contentItem[actualField as keyof Content] as string) || '';
+    
+    // Admin always has edit access
+    const canEdit = userRole === 'admin' || canUserEdit(userRole, field as ColumnName);
+    const isEditing = editingCell?.id === String(contentId) && editingCell?.field === field;
 
     if (!canEdit) {
       return (
         <td className="px-4 py-3 border-b border-[#563EB7]/10">
-          <div className="text-gray-500 text-sm">{value || '—'}</div>
+          <div className="text-gray-500 text-sm" title={`You don't have permission to edit ${field}`}>
+            {value || '—'}
+          </div>
         </td>
       );
     }
@@ -304,7 +392,7 @@ export default function ContentPlanTable({
         <div className="flex items-center justify-between">
           <span className="text-white text-sm">{value || '—'}</span>
           <button
-            onClick={() => handleEditStart(contentItem.id, field, value)}
+            onClick={() => handleEditStart(String(contentId), field, value)}
             className="opacity-0 group-hover:opacity-100 p-1 text-[#563EB7] hover:text-[#6d4dd4] transition-all"
           >
             <Edit2 size={14} />
@@ -373,7 +461,8 @@ export default function ContentPlanTable({
                   </td>
                 </tr>
               ) : (
-                localContent.map((item) => {
+                localContent.map((item, index) => {
+                  // Use item directly from localContent for full reactivity
                   const statusInfo = getStatusBadge(item.status);
                   
                   return (
@@ -384,12 +473,12 @@ export default function ContentPlanTable({
                           {new Date(item.dueDate).toLocaleDateString()}
                         </div>
                       </td>
-                      <EditableCell content={item} field="design-brief" value={item.designBrief || ''} />
-                      <EditableCell content={item} field="inspiration" value={item.inspiration || ''} />
-                      <EditableCell content={item} field="design" value={item.design || ''} />
-                      <EditableCell content={item} field="text-content" value={item.textContent || ''} />
-                      <EditableCell content={item} field="drive-link" value={item.driveLink || ''} />
-                      <EditableCell content={item} field="notes" value={item.notes || ''} />
+                      <EditableCell contentId={String(item.id)} field="design-brief" />
+                      <EditableCell contentId={String(item.id)} field="inspiration" />
+                      <EditableCell contentId={String(item.id)} field="design" />
+                      <EditableCell contentId={String(item.id)} field="text-content" />
+                      <EditableCell contentId={String(item.id)} field="drive-link" />
+                      <EditableCell contentId={String(item.id)} field="notes" />
                       <td className="px-4 py-3 border-b border-[#563EB7]/10">
                         <select
                           value={item.status}
@@ -442,7 +531,7 @@ export default function ContentPlanTable({
                           )}
 
                           {/* Mark as Ready Button */}
-                          {!item.readyForCalendar && (item.status === 'approved' || item.status === 'review') && (
+                          {!item.readyForCalendar && ['approved', 'scheduled', 'published'].includes(item.status) && (
                             <button
                               onClick={() => handleMarkReady(item.id)}
                               className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors flex items-center gap-1"
@@ -537,10 +626,10 @@ export default function ContentPlanTable({
             </div>
 
             <Select
-              label="Assigned To"
-              value={editingContent.assignedTo}
-              onChange={(e) => setEditingContent({ ...editingContent, assignedTo: e.target.value })}
-              options={users.map(u => ({ value: u.id, label: u.name }))}
+            label="Assigned To"
+            value={editingContent.assignedTo}
+            onChange={(e) => setEditingContent({ ...editingContent, assignedTo: e.target.value })}
+            options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
             />
           </div>
         </Modal>
@@ -633,7 +722,7 @@ export default function ContentPlanTable({
             label="Assign To"
             value={formData.assignedTo}
             onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-            options={users.map(u => ({ 
+            options={activeUsers.map(u => ({ 
               value: u.id, 
               label: u.name 
             }))}
@@ -651,6 +740,55 @@ export default function ContentPlanTable({
               { value: 'published', label: 'Published' },
             ]}
           />
+
+          {/* Additional Content Fields */}
+          <div className="border-t border-[#563EB7]/20 pt-4 mt-4">
+            <h3 className="text-sm font-semibold text-white mb-3">Content Details</h3>
+            
+            <div className="space-y-3">
+              <Input
+                label="Design Brief"
+                value={formData.designBrief}
+                onChange={(e) => setFormData({ ...formData, designBrief: e.target.value })}
+                placeholder="Brief description of design requirements"
+              />
+
+              <Input
+                label="Inspiration"
+                value={formData.inspiration}
+                onChange={(e) => setFormData({ ...formData, inspiration: e.target.value })}
+                placeholder="Links or references for inspiration"
+              />
+
+              <Input
+                label="Design"
+                value={formData.design}
+                onChange={(e) => setFormData({ ...formData, design: e.target.value })}
+                placeholder="Design file link or details"
+              />
+
+              <Input
+                label="Text Content"
+                value={formData.textContent}
+                onChange={(e) => setFormData({ ...formData, textContent: e.target.value })}
+                placeholder="Caption or text for the content"
+              />
+
+              <Input
+                label="Drive Link"
+                value={formData.driveLink}
+                onChange={(e) => setFormData({ ...formData, driveLink: e.target.value })}
+                placeholder="Google Drive or file link"
+              />
+
+              <Input
+                label="Notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Additional notes"
+              />
+            </div>
+          </div>
         </div>
       </Modal>
     </div>
