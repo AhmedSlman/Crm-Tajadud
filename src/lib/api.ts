@@ -999,6 +999,51 @@ export const permissionsAPI = {
 
     await handleResponse(response);
   },
+
+  // ============ Action Permissions ============
+  
+  // Get all action permissions
+  async getActionPermissions(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/permissions/actions`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Get role action permissions
+  async getRoleActionPermissions(role: string): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/permissions/actions/role/${role}`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Update action permission
+  async updateActionPermission(role: string, resource: string, action: string, canPerform: boolean): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/permissions/actions/update`, {
+      method: 'POST',
+      headers: createHeaders(),
+      body: JSON.stringify({ role, resource, action, can_perform: canPerform }),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Check if can perform action
+  async canPerform(role: string, resource: string, action: string): Promise<boolean> {
+    const response = await fetch(`${API_BASE_URL}/permissions/actions/can-perform`, {
+      method: 'POST',
+      headers: createHeaders(),
+      body: JSON.stringify({ role, resource, action }),
+    });
+
+    const data = await handleResponse(response);
+    return data.can_perform || false;
+  },
 };
 
 // Health Check API

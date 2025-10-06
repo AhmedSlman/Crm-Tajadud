@@ -288,3 +288,14 @@ export type PermissionsConfig = {
   updatedAt: string;
 };
 
+// Action-based permissions
+export type ResourceType = 'tasks' | 'content' | 'campaigns' | 'projects' | 'clients' | 'users';
+export type ActionType = 'create' | 'update' | 'delete' | 'view';
+
+export type ActionPermission = {
+  role: UserRole;
+  resource: ResourceType;
+  action: ActionType;
+  canPerform: boolean;
+};
+

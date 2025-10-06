@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Client, Project, Task, Campaign, Content, User, Notification, RolePermission, UserRole, ColumnName, CustomRole } from '@/types';
+import { Client, Project, Task, Campaign, Content, User, Notification, RolePermission, UserRole, ColumnName, CustomRole, ActionPermission as ActionPermissionType, ResourceType, ActionType } from '@/types';
 import { useAuth } from './AuthContext';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ type DataContextType = {
   currentUser: User;
   loading: boolean;
   permissions: RolePermission[];
+  actionPermissions: ActionPermissionType[];
   customRoles: CustomRole[];
   addClient: (client: Omit<Client, 'id' | 'createdAt' | 'linkedProjects'>) => Promise<void>;
   updateClient: (id: string, client: Partial<Client>) => Promise<void>;
@@ -37,7 +38,9 @@ type DataContextType = {
   markNotificationAsRead: (id: string) => void;
   refreshData: () => Promise<void>;
   canUserEdit: (role: UserRole, column: ColumnName) => boolean;
+  canPerformAction: (role: UserRole, resource: ResourceType, action: ActionType) => boolean;
   updatePermission: (role: UserRole, column: ColumnName, canEdit: boolean) => void;
+  updateActionPermission: (role: UserRole, resource: ResourceType, action: ActionType, canPerform: boolean) => Promise<void>;
   resetPermissions: () => void;
   approveUser: (userId: string) => Promise<void>;
   rejectUser: (userId: string) => Promise<void>;
@@ -102,6 +105,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return [];
   });
 
+  const [actionPermissions, setActionPermissions] = useState<ActionPermissionType[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('actionPermissions');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+
   // Load data when user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -116,9 +127,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Load permissions from API
   const loadPermissions = async () => {
     try {
-      const [permsData, rolesData] = await Promise.all([
+      const [permsData, rolesData, actionPermsData] = await Promise.all([
         api.permissions.getAll(),
-        api.permissions.getAllRoles()
+        api.permissions.getAllRoles(),
+        api.permissions.getActionPermissions().catch(() => [])
       ]);
       
       if (permsData && permsData.length > 0) {
@@ -150,6 +162,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setCustomRoles(customRolesList);
         // حفظ في localStorage
         localStorage.setItem('customRoles', JSON.stringify(customRolesList));
+      }
+      
+      if (actionPermsData && actionPermsData.length > 0) {
+        // Normalize action permissions
+        const normalizedActionPerms = actionPermsData.map((p: any) => ({
+          role: p.role,
+          resource: p.resource,
+          action: p.action,
+          canPerform: p.can_perform ?? p.canPerform ?? false,
+        }));
+        
+        setActionPermissions(normalizedActionPerms);
+        localStorage.setItem('actionPermissions', JSON.stringify(normalizedActionPerms));
       }
     } catch (error) {
       console.error('Error loading permissions:', error);
@@ -541,6 +566,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return permission?.canEdit || (permission as any)?.can_edit || false;
   };
 
+  const canPerformAction = (role: UserRole, resource: ResourceType, action: ActionType): boolean => {
+    // Admin can always perform any action
+    if (role === 'admin') {
+      return true;
+    }
+    
+    const permission = actionPermissions.find(
+      p => p.role === role && p.resource === resource && p.action === action
+    );
+    return permission?.canPerform || (permission as any)?.can_perform || false;
+  };
+
   const updatePermission = async (role: UserRole, column: ColumnName, canEdit: boolean) => {
     try {
       // Update in backend
@@ -558,6 +595,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('permissions', JSON.stringify(updated));
     } catch (error) {
       console.error('Error updating permission:', error);
+      toast.error('Failed to update permission');
+      throw error;
+    }
+  };
+
+  const updateActionPermission = async (role: UserRole, resource: ResourceType, action: ActionType, canPerform: boolean) => {
+    try {
+      await api.permissions.updateActionPermission(role, resource, action, canPerform);
+      
+      // Update local state
+      const existingIndex = actionPermissions.findIndex(
+        p => p.role === role && p.resource === resource && p.action === action
+      );
+      
+      let updated;
+      if (existingIndex >= 0) {
+        // Update existing permission
+        updated = actionPermissions.map((p, i) => 
+          i === existingIndex
+            ? { ...p, canPerform, can_perform: canPerform }
+            : p
+        );
+      } else {
+        // Add new permission if it doesn't exist
+        updated = [...actionPermissions, {
+          role,
+          resource,
+          action,
+          canPerform,
+        }];
+      }
+      
+      setActionPermissions(updated);
+      localStorage.setItem('actionPermissions', JSON.stringify(updated));
+      
+      // Log for debugging
+      console.log('Action permission updated:', { role, resource, action, canPerform });
+    } catch (error) {
+      console.error('Error updating action permission:', error);
       toast.error('Failed to update permission');
       throw error;
     }
@@ -749,6 +825,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       currentUser: currentUser || {} as User,
       loading,
       permissions,
+      actionPermissions,
       addClient,
       updateClient,
       deleteClient,
@@ -767,7 +844,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       markNotificationAsRead,
       refreshData,
       canUserEdit,
+      canPerformAction,
       updatePermission,
+      updateActionPermission,
       resetPermissions,
       approveUser,
       rejectUser,
