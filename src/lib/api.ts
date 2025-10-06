@@ -11,11 +11,23 @@ const toSnakeCase = (obj: unknown): unknown => {
   if (Array.isArray(obj)) return obj.map(toSnakeCase);
   
   const snakeObj: Record<string, unknown> = {};
+  
+  // Special mapping for fields that need _id suffix
+  const idFieldMap: Record<string, string> = {
+    'clientId': 'client_id',
+    'projectId': 'project_id',
+    'projectManager': 'project_manager_id',
+    'assignedTo': 'assigned_to',
+    'campaignId': 'campaign_id',
+    'responsiblePerson': 'responsible_person_id',
+  };
+  
   for (const [key, value] of Object.entries(obj)) {
     // Skip undefined values
     if (value === undefined) continue;
     
-    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    // Use special mapping if available, otherwise convert to snake_case
+    const snakeKey = idFieldMap[key] || key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     snakeObj[snakeKey] = toSnakeCase(value);
   }
   return snakeObj;
@@ -322,7 +334,7 @@ export const usersAPI = {
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: 'POST',
       headers: createHeaders(),
-      body: JSON.stringify(userData),
+      body: JSON.stringify(toSnakeCase(userData)),
     });
 
     return handleResponse(response);
@@ -333,7 +345,7 @@ export const usersAPI = {
     const response = await fetch(`${API_BASE_URL}/users/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
-      body: JSON.stringify(userData),
+      body: JSON.stringify(toSnakeCase(userData)),
     });
 
     return handleResponse(response);
@@ -427,7 +439,7 @@ export const clientsAPI = {
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
       headers: createHeaders(),
-      body: JSON.stringify(clientData),
+      body: JSON.stringify(toSnakeCase(clientData)),
     });
 
     return handleResponse(response);
@@ -438,7 +450,7 @@ export const clientsAPI = {
     const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
-      body: JSON.stringify(clientData),
+      body: JSON.stringify(toSnakeCase(clientData)),
     });
 
     return handleResponse(response);
@@ -523,7 +535,7 @@ export const projectsAPI = {
     const response = await fetch(`${API_BASE_URL}/projects`, {
       method: 'POST',
       headers: createHeaders(),
-      body: JSON.stringify(projectData),
+      body: JSON.stringify(toSnakeCase(projectData)),
     });
 
     return handleResponse(response);
@@ -534,7 +546,7 @@ export const projectsAPI = {
     const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
-      body: JSON.stringify(projectData),
+      body: JSON.stringify(toSnakeCase(projectData)),
     });
 
     return handleResponse(response);
@@ -626,7 +638,7 @@ export const tasksAPI = {
     const response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'POST',
       headers: createHeaders(),
-      body: JSON.stringify(taskData),
+      body: JSON.stringify(toSnakeCase(taskData)),
     });
 
     return handleResponse(response);
@@ -637,7 +649,7 @@ export const tasksAPI = {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
-      body: JSON.stringify(taskData),
+      body: JSON.stringify(toSnakeCase(taskData)),
     });
 
     return handleResponse(response);
@@ -719,7 +731,7 @@ export const campaignsAPI = {
     const response = await fetch(`${API_BASE_URL}/campaigns`, {
       method: 'POST',
       headers: createHeaders(),
-      body: JSON.stringify(campaignData),
+      body: JSON.stringify(toSnakeCase(campaignData)),
     });
 
     return handleResponse(response);
@@ -730,7 +742,7 @@ export const campaignsAPI = {
     const response = await fetch(`${API_BASE_URL}/campaigns/${id}`, {
       method: 'PUT',
       headers: createHeaders(),
-      body: JSON.stringify(campaignData),
+      body: JSON.stringify(toSnakeCase(campaignData)),
     });
 
     return handleResponse(response);

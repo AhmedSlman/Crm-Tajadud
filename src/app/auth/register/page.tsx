@@ -101,9 +101,9 @@ export default function RegisterPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            Join Our Team
+            Join Tajadud Team
           </h1>
-          <p className="text-gray-400 animate-fadeIn" style={{ animationDelay: '0.3s' }}>Create your employee account</p>
+          <p className="text-gray-400 animate-fadeIn" style={{ animationDelay: '0.3s' }}>Create your account to start managing projects</p>
         </div>
 
         {/* Register Card */}

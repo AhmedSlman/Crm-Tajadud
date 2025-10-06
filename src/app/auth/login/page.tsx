@@ -57,9 +57,9 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-            Welcome Back
+            Welcome to Tajadud
           </h1>
-          <p className="text-gray-400 animate-fadeIn" style={{ animationDelay: '0.3s' }}>Sign in to your CRM account</p>
+          <p className="text-gray-400 animate-fadeIn" style={{ animationDelay: '0.3s' }}>Sign in to manage your digital marketing projects</p>
         </div>
 
         {/* Login Card */}

@@ -236,14 +236,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Clients CRUD
   const addClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'linkedProjects'>) => {
     try {
-      const newClient = await api.clients.create({
-        name: clientData.name,
-        contactPerson: clientData.contactPerson,
-        phone: clientData.phone,
-        email: clientData.email,
-        company: clientData.company,
-        notes: clientData.notes || ''
-      });
+      const newClient = await api.clients.create(clientData);
       
       setClients([...clients, newClient]);
       toast.success('تم إضافة العميل بنجاح');
@@ -257,14 +250,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateClient = async (id: string, updatedClient: Partial<Client>) => {
     try {
-      const updated = await api.clients.update(id, {
-        name: updatedClient.name,
-        contactPerson: updatedClient.contactPerson,
-        phone: updatedClient.phone,
-        email: updatedClient.email,
-        company: updatedClient.company,
-        notes: updatedClient.notes
-      });
+      const updated = await api.clients.update(id, updatedClient);
       
       setClients(clients.map(c => c.id === id ? { ...c, ...updated } : c));
       toast.success('تم تحديث العميل بنجاح');
@@ -290,16 +276,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Projects CRUD
   const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'linkedTasks' | 'linkedCampaigns' | 'linkedContent' | 'files'>) => {
     try {
-      const newProject = await api.projects.create({
-        name: projectData.name,
-        description: projectData.description,
-        clientId: projectData.clientId,
-        startDate: projectData.startDate,
-        endDate: projectData.endDate,
-        status: projectData.status,
-        projectManager: projectData.projectManager,
-        progress: projectData.progress || 0
-      });
+      const newProject = await api.projects.create(projectData);
       
       setProjects([...projects, newProject]);
       toast.success('تم إضافة المشروع بنجاح');
@@ -313,16 +290,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateProject = async (id: string, updatedProject: Partial<Project>) => {
     try {
-      const updated = await api.projects.update(id, {
-        name: updatedProject.name,
-        description: updatedProject.description,
-        clientId: updatedProject.clientId,
-        startDate: updatedProject.startDate,
-        endDate: updatedProject.endDate,
-        status: updatedProject.status,
-        projectManager: updatedProject.projectManager,
-        progress: updatedProject.progress
-      });
+      const updated = await api.projects.update(id, updatedProject);
       
       setProjects(projects.map(p => p.id === id ? { ...p, ...updated } : p));
       toast.success('تم تحديث المشروع بنجاح');
@@ -348,18 +316,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Tasks CRUD
   const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'subtasks' | 'attachments' | 'comments' | 'changeLog'>) => {
     try {
-      const newTask = await api.tasks.create({
-        title: taskData.title,
-        description: taskData.description || '',
-        type: taskData.type,
-        status: taskData.status,
-        priority: taskData.priority,
-        assignedTo: taskData.assignedTo,
-        startDate: taskData.startDate,
-        dueDate: taskData.dueDate,
-        projectId: taskData.projectId,
-        progress: taskData.progress || 0
-      });
+      const newTask = await api.tasks.create(taskData);
       
       setTasks([...tasks, newTask]);
       toast.success('تم إضافة المهمة بنجاح');
@@ -373,19 +330,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateTask = async (id: string, updatedTask: Partial<Task>) => {
     try {
-      const updated = await api.tasks.update(id, {
-        title: updatedTask.title,
-        description: updatedTask.description,
-        type: updatedTask.type,
-        status: updatedTask.status,
-        priority: updatedTask.priority,
-        assignedTo: updatedTask.assignedTo,
-        startDate: updatedTask.startDate,
-        dueDate: updatedTask.dueDate,
-        completionDate: updatedTask.completionDate,
-        projectId: updatedTask.projectId,
-        progress: updatedTask.progress
-      });
+      const updated = await api.tasks.update(id, updatedTask);
       
       setTasks(tasks.map(t => t.id === id ? { ...t, ...updated } : t));
       toast.success('تم تحديث المهمة بنجاح');
@@ -411,18 +356,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Campaigns CRUD
   const addCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'kpis' | 'attachments'>) => {
     try {
-      const newCampaign = await api.campaigns.create({
-        name: campaignData.name,
-        projectId: campaignData.projectId,
-        type: campaignData.type,
-        objective: campaignData.objective,
-        startDate: campaignData.startDate,
-        endDate: campaignData.endDate,
-        budget: campaignData.budget,
-        status: campaignData.status,
-        responsiblePerson: campaignData.responsiblePerson,
-        progress: campaignData.progress || 0
-      });
+      const newCampaign = await api.campaigns.create(campaignData);
       
       setCampaigns([...campaigns, newCampaign]);
       toast.success('تم إضافة الحملة بنجاح');
@@ -436,18 +370,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateCampaign = async (id: string, updatedCampaign: Partial<Campaign>) => {
     try {
-      const updated = await api.campaigns.update(id, {
-        name: updatedCampaign.name,
-        projectId: updatedCampaign.projectId,
-        type: updatedCampaign.type,
-        objective: updatedCampaign.objective,
-        startDate: updatedCampaign.startDate,
-        endDate: updatedCampaign.endDate,
-        budget: updatedCampaign.budget,
-        status: updatedCampaign.status,
-        responsiblePerson: updatedCampaign.responsiblePerson,
-        progress: updatedCampaign.progress
-      });
+      const updated = await api.campaigns.update(id, updatedCampaign);
       
       setCampaigns(campaigns.map(c => c.id === id ? { ...c, ...updated } : c));
       toast.success('تم تحديث الحملة بنجاح');
@@ -473,28 +396,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Content CRUD
   const addContent = async (contentData: Omit<Content, 'id' | 'createdAt' | 'attachments' | 'comments'>) => {
     try {
-      const newContent = await api.contents.create({
-        title: contentData.title,
-        contentType: contentData.contentType,
-        projectId: contentData.projectId,
-        campaignId: contentData.campaignId,
-        status: contentData.status,
-        assignedTo: contentData.assignedTo,
-        startDate: contentData.startDate,
-        dueDate: contentData.dueDate,
-        publishDate: contentData.publishDate,
-        priority: contentData.priority,
-        progress: contentData.progress || 0,
-        designBrief: contentData.designBrief,
-        inspiration: contentData.inspiration,
-        design: contentData.design,
-        textContent: contentData.textContent,
-        driveLink: contentData.driveLink,
-        notes: contentData.notes,
-        month: contentData.month,
-        isReel: contentData.isReel || false,
-        readyForCalendar: contentData.readyForCalendar || false
-      });
+      const newContent = await api.contents.create(contentData);
       
       setContent([...content, newContent]);
       toast.success('تم إضافة المحتوى بنجاح');
@@ -508,28 +410,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateContent = async (id: string, updatedContent: Partial<Content>) => {
     try {
-      const updated = await api.contents.update(id, {
-        title: updatedContent.title,
-        contentType: updatedContent.contentType,
-        projectId: updatedContent.projectId,
-        campaignId: updatedContent.campaignId,
-        status: updatedContent.status,
-        assignedTo: updatedContent.assignedTo,
-        startDate: updatedContent.startDate,
-        dueDate: updatedContent.dueDate,
-        publishDate: updatedContent.publishDate,
-        priority: updatedContent.priority,
-        progress: updatedContent.progress,
-        designBrief: updatedContent.designBrief,
-        inspiration: updatedContent.inspiration,
-        design: updatedContent.design,
-        textContent: updatedContent.textContent,
-        driveLink: updatedContent.driveLink,
-        notes: updatedContent.notes,
-        month: updatedContent.month,
-        isReel: updatedContent.isReel,
-        readyForCalendar: updatedContent.readyForCalendar
-      });
+      const updated = await api.contents.update(id, updatedContent);
       
       setContent(content.map(c => c.id === id ? { ...c, ...updated } : c));
       toast.success('تم تحديث المحتوى بنجاح');

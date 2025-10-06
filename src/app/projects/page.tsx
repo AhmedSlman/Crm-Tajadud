@@ -72,6 +72,16 @@ export default function ProjectsPage() {
       return;
     }
 
+    if (!formData.startDate || !formData.endDate) {
+      toast.error('Please provide start and end dates');
+      return;
+    }
+
+    if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+      toast.error('End date must be after start date');
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (editingProject) {
