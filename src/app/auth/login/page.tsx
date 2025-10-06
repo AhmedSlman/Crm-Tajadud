@@ -7,7 +7,7 @@ import Input from '@/components/Input';
 import Image from 'next/image';
 import Logo from '@/assets/dqdddd.svg';
 import StockPattern from '@/assets/stock.svg';
-import { LogIn, Sparkles, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -17,7 +17,6 @@ export default function LoginPage() {
     password: '',
   });
   const [error, setError] = useState('');
-  const [showDemoAccounts, setShowDemoAccounts] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +24,6 @@ export default function LoginPage() {
 
     try {
       await login(formData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    }
-  };
-
-  const handleDemoLogin = async (email: string, password: string) => {
-    setFormData({ email, password });
-    setError('');
-    try {
-      await login({ email, password });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     }
@@ -143,87 +132,6 @@ export default function LoginPage() {
                 </>
               )}
             </Button>
-
-            {/* Demo Accounts Toggle */}
-            <button
-              type="button"
-              onClick={() => setShowDemoAccounts(!showDemoAccounts)}
-              className="w-full text-sm text-gray-400 hover:text-[#563EB7] transition-colors"
-            >
-              {showDemoAccounts ? 'Hide' : 'Show'} Demo Accounts
-            </button>
-
-            {/* Demo Accounts */}
-            {showDemoAccounts && (
-              <div className="space-y-2 p-4 bg-[#1a1333]/50 rounded-xl border border-[#563EB7]/10 animate-fadeIn">
-                <p className="text-xs text-gray-400 mb-3 font-medium">Quick Login (Demo):</p>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('admin@crm.com', 'admin123')}
-                  className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white font-medium">Admin Account</p>
-                      <p className="text-xs text-gray-400">admin@crm.com / admin123</p>
-                    </div>
-                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('ahmed@crm.com', '123456')}
-                  className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white font-medium">Graphic Designer</p>
-                      <p className="text-xs text-gray-400">ahmed@crm.com / 123456</p>
-                    </div>
-                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('sara@crm.com', '123456')}
-                  className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white font-medium">Social Media</p>
-                      <p className="text-xs text-gray-400">sara@crm.com / 123456</p>
-                    </div>
-                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('karim@crm.com', '123456')}
-                  className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white font-medium">Account Manager</p>
-                      <p className="text-xs text-gray-400">karim@crm.com / 123456</p>
-                    </div>
-                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('omar@crm.com', '123456')}
-                  className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white font-medium">Content Writer</p>
-                      <p className="text-xs text-gray-400">omar@crm.com / 123456</p>
-                    </div>
-                    <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Pending</span>
-                  </div>
-                </button>
-              </div>
-            )}
 
             {/* Divider */}
             <div className="relative">

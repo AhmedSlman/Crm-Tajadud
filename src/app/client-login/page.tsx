@@ -7,7 +7,7 @@ import Input from '@/components/Input';
 import Image from 'next/image';
 import Logo from '@/assets/dqdddd.svg';
 import StockPattern from '@/assets/stock.svg';
-import { Building2, Lock, Mail, Eye, EyeOff, AlertCircle, Sparkles } from 'lucide-react';
+import { Building2, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { ClientUser } from '@/types';
 import { toast } from 'sonner';
@@ -43,16 +43,6 @@ export default function ClientLoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoLogin = (email: string, password: string) => {
-    setFormData({ email, password });
-    setTimeout(() => {
-      const submitEvent = {
-        preventDefault: () => {},
-      } as React.FormEvent;
-      handleSubmit(submitEvent);
-    }, 100);
   };
 
   return (
@@ -182,61 +172,12 @@ export default function ClientLoginPage() {
                       Signing In...
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center gap-2">
-                      <Sparkles size={20} />
-                      Sign In to Dashboard
-                    </div>
+                    'Sign In to Dashboard'
                   )}
                 </Button>
               </form>
 
-              {/* Demo Accounts */}
-              <div className="mt-8 pt-6 border-t border-[#563EB7]/20">
-                <p className="text-center text-sm text-gray-400 mb-4">Demo Client Accounts</p>
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('mohamed@techstart.com', '123456')}
-                    className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-white font-medium">TechStart Solutions</p>
-                        <p className="text-xs text-gray-400">mohamed@techstart.com / 123456</p>
-                      </div>
-                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('sarah@greenlife.com', '123456')}
-                    className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-white font-medium">GreenLife Organic</p>
-                        <p className="text-xs text-gray-400">sarah@greenlife.com / 123456</p>
-                      </div>
-                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('omar@urbanstyle.com', '123456')}
-                    className="w-full text-left px-3 py-2 bg-[#563EB7]/10 hover:bg-[#563EB7]/20 rounded-lg transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-white font-medium">Urban Style Fashion</p>
-                        <p className="text-xs text-gray-400">omar@urbanstyle.com / 123456</p>
-                      </div>
-                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-6 text-center">
+              <div className="mt-8 text-center">
                 <Link 
                   href="/auth/login" 
                   className="text-sm text-gray-400 hover:text-white transition-colors"
