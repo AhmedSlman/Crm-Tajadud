@@ -25,7 +25,6 @@ export default function ProtectedRoute({
       // Check if client is trying to access admin routes
       const clientUser = localStorage.getItem('clientUser');
       if (clientUser) {
-        // Client is logged in, redirect to client dashboard
         router.push('/client-dashboard');
         return;
       }
@@ -56,7 +55,8 @@ export default function ProtectedRoute({
     }
   }, [loading, isAuthenticated, isPending, isAdmin, user, router, requireAdmin, allowedRoles]);
 
-  if (loading) {
+  // Always show loading while checking auth or during redirects
+  if (loading || !isAuthenticated || isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0c081e]">
         <LoadingSpinner size="lg" />
@@ -64,34 +64,14 @@ export default function ProtectedRoute({
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  if (isPending) {
-    return null;
-  }
-
+  // Check admin access
   if (requireAdmin && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0c081e]">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-400">You don&apos;t have permission to access this page.</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
+  // Check role-based access
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0c081e]">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-400">You don&apos;t have permission to access this page.</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return <>{children}</>;

@@ -11,7 +11,7 @@ interface ClientProtectedRouteProps {
 export default function ClientProtectedRoute({ children }: ClientProtectedRouteProps) {
   const router = useRouter();
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // Check if client is logged in
@@ -19,6 +19,7 @@ export default function ClientProtectedRoute({ children }: ClientProtectedRouteP
     
     if (!storedClient) {
       router.push('/client-login');
+      setIsChecking(false);
       return;
     }
 
@@ -27,6 +28,7 @@ export default function ClientProtectedRoute({ children }: ClientProtectedRouteP
       if (client.status === 'suspended') {
         localStorage.removeItem('clientUser');
         router.push('/client-login');
+        setIsChecking(false);
         return;
       }
       
@@ -34,25 +36,22 @@ export default function ClientProtectedRoute({ children }: ClientProtectedRouteP
       localStorage.removeItem('user');
       
       setClientUser(client);
+      setIsChecking(false);
     } catch (error) {
       localStorage.removeItem('clientUser');
       router.push('/client-login');
+      setIsChecking(false);
       return;
     }
-    
-    setLoading(false);
   }, [router]);
 
-  if (loading) {
+  // Always show loading until auth check is complete
+  if (isChecking || !clientUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0c081e]">
         <div className="text-white">Loading...</div>
       </div>
     );
-  }
-
-  if (!clientUser) {
-    return null;
   }
 
   return <>{children}</>;
