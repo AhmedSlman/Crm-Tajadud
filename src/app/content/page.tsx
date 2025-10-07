@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
@@ -18,6 +18,8 @@ export default function ContentPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterProject, setFilterProject] = useState<string>('all');
   const [formData, setFormData] = useState({
     title: '',
     contentType: 'post' as Content['contentType'],
@@ -112,7 +114,27 @@ export default function ContentPage() {
     return priorityMap[priority] || 'default';
   };
 
-  const filteredContent = filterStatus === 'all' ? content : content.filter(c => c.status === filterStatus);
+  // Filter content
+  const filteredContent = useMemo(() => {
+    return content.filter(item => {
+      // Status filter
+      if (filterStatus !== 'all' && item.status !== filterStatus) return false;
+      
+      // Priority filter
+      if (filterPriority !== 'all' && item.priority !== filterPriority) return false;
+      
+      // Project filter
+      if (filterProject !== 'all') {
+        const contentProjectId = item.projectId || '';
+        const filterProjectStr = String(filterProject);
+        const contentProjectIdStr = String(contentProjectId);
+        
+        if (contentProjectIdStr !== filterProjectStr) return false;
+      }
+      
+      return true;
+    });
+  }, [content, filterStatus, filterPriority, filterProject]);
 
   return (
     <div className="space-y-6">
@@ -129,14 +151,15 @@ export default function ContentPage() {
         )}
       </div>
 
-      <Card>
-        <div className="p-4 border-b border-[#563EB7]/20 flex items-center gap-4">
+      <Card hover={false}>
+        <div className="p-4 flex flex-wrap items-center gap-4">
           <Filter size={20} className="text-gray-400" />
+          
           <Select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             options={[
-              { value: 'all', label: 'All Content' },
+              { value: 'all', label: 'All Status' },
               { value: 'idea', label: 'Ideas' },
               { value: 'in-progress', label: 'In Progress' },
               { value: 'review', label: 'Review' },
@@ -144,17 +167,57 @@ export default function ContentPage() {
               { value: 'scheduled', label: 'Scheduled' },
               { value: 'published', label: 'Published' },
             ]}
+            className="w-40"
+          />
+
+          <Select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Priorities' },
+              { value: 'urgent', label: 'Urgent' },
+              { value: 'high', label: 'High' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'low', label: 'Low' },
+            ]}
+            className="w-40"
+          />
+
+          <Select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Projects' },
+              { value: '', label: 'No Project' },
+              ...projects.filter(p => p && p.id).map(p => ({ 
+                value: String(p.id), 
+                label: p.name 
+              }))
+            ]}
             className="w-48"
           />
+
+          <div className="flex-1" />
+          
+          <div className="text-sm text-gray-400">
+            Showing <span className="text-white font-semibold">{filteredContent.length}</span> of {content.length} items
+          </div>
         </div>
+      </Card>
+
+      <Card>
 
         {filteredContent.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">No content found</p>
-            <Button onClick={() => handleOpenModal()}>
-              <Plus size={20} className="mr-2" />
-              Create Your First Content
-            </Button>
+            <p className="text-gray-400 mb-4">
+              {content.length === 0 ? 'No content yet' : 'No content matches your filters'}
+            </p>
+            {content.length === 0 && canPerformAction(currentUser?.role, 'content', 'create') && (
+              <Button onClick={() => handleOpenModal()}>
+                <Plus size={20} className="mr-2" />
+                Create Your First Content
+              </Button>
+            )}
           </div>
         ) : (
           <Table headers={['Title', 'Type', 'Status', 'Priority', 'Assigned To', 'Due Date', 'Progress', 'Actions']}>
@@ -280,13 +343,19 @@ export default function ContentPage() {
               label="Project (Optional)"
               value={formData.projectId}
               onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-              options={[{ value: '', label: 'No Project' }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
+              options={[
+                { value: '', label: 'No Project' }, 
+                ...projects.map(p => ({ value: String(p.id), label: p.name }))
+              ]}
             />
             <Select
               label="Campaign (Optional)"
               value={formData.campaignId}
               onChange={(e) => setFormData({ ...formData, campaignId: e.target.value })}
-              options={[{ value: '', label: 'No Campaign' }, ...campaigns.map(c => ({ value: c.id, label: c.name }))]}
+              options={[
+                { value: '', label: 'No Campaign' }, 
+                ...campaigns.map(c => ({ value: String(c.id), label: c.name }))
+              ]}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">

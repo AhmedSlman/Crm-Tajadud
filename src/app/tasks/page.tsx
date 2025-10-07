@@ -128,7 +128,15 @@ export default function TasksPage() {
       if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
       
       // Project filter
-      if (filterProject !== 'all' && task.projectId !== filterProject) return false;
+      if (filterProject !== 'all') {
+        // Handle tasks with no project
+        const taskProjectId = task.projectId || '';
+        // Convert both to string for comparison
+        const filterProjectStr = String(filterProject);
+        const taskProjectIdStr = String(taskProjectId);
+        
+        if (taskProjectIdStr !== filterProjectStr) return false;
+      }
       
       // Search filter
       if (searchQuery && !searchInObject(task, searchQuery)) return false;
@@ -279,7 +287,11 @@ export default function TasksPage() {
             onChange={(e) => setFilterProject(e.target.value)}
             options={[
               { value: 'all', label: 'All Projects' },
-              ...projects.filter(p => p && p.id).map(p => ({ value: p.id, label: p.name }))
+              { value: '', label: 'No Project' },
+              ...projects.filter(p => p && p.id).map(p => ({ 
+                value: String(p.id), 
+                label: p.name 
+              }))
             ]}
             className="w-48"
           />
@@ -488,7 +500,13 @@ export default function TasksPage() {
               label="Project (Optional)"
               value={formData.projectId}
               onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-              options={[{ value: '', label: 'No Project' }, ...projects.filter(p => p && p.id).map(p => ({ value: p.id, label: p.name }))]}
+              options={[
+                { value: '', label: 'No Project' }, 
+                ...projects.filter(p => p && p.id).map(p => ({ 
+                  value: String(p.id), 
+                  label: p.name 
+                }))
+              ]}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">

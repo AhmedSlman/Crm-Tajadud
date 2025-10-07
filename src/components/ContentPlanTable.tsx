@@ -131,7 +131,7 @@ export default function ContentPlanTable({
                   </td>
                   <td className="px-4 py-3">
                     <div className="max-w-xs">
-                      {task.comments.length > 0 ? (
+                      {task.comments && task.comments.length > 0 ? (
                         <p className="text-xs text-gray-400 truncate" title={task.comments[0].text}>
                           {task.comments[0].text}
                         </p>

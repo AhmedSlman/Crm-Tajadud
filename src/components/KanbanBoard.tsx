@@ -65,7 +65,7 @@ export default function KanbanBoard({ tasks, users, onTaskClick, onStatusChange 
                       <Badge variant={getPriorityBadge(task.priority)} size="sm">
                         {task.priority}
                       </Badge>
-                      {task.subtasks.length > 0 && (
+                      {task.subtasks && task.subtasks.length > 0 && (
                         <span className="text-xs text-gray-400">
                           {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} subtasks
                         </span>
@@ -102,7 +102,7 @@ export default function KanbanBoard({ tasks, users, onTaskClick, onStatusChange 
                     </div>
 
                     {/* Comments indicator */}
-                    {task.comments.length > 0 && (
+                    {task.comments && task.comments.length > 0 && (
                       <div className="mt-2 text-xs text-[#563EB7] flex items-center gap-1">
                         💬 {task.comments.length} {task.comments.length === 1 ? 'comment' : 'comments'}
                       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
@@ -10,7 +10,7 @@ import Modal from '@/components/Modal';
 import Input from '@/components/Input';
 import Select from '@/components/Select';
 import LoadingState, { LoadingSpinner } from '@/components/LoadingState';
-import { Plus, Pencil, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Pencil, Trash2, DollarSign, Filter } from 'lucide-react';
 import { Campaign } from '@/types';
 import { toast } from 'sonner';
 
@@ -20,6 +20,8 @@ export default function CampaignsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterProject, setFilterProject] = useState<string>('all');
   
   // Sync with global campaigns
   useEffect(() => {
@@ -124,6 +126,25 @@ export default function CampaignsPage() {
     return type.replace('-', ' ').replace('ads', '').trim();
   };
 
+  // Filter campaigns
+  const filteredCampaigns = useMemo(() => {
+    return localCampaigns.filter(campaign => {
+      // Status filter
+      if (filterStatus !== 'all' && campaign.status !== filterStatus) return false;
+      
+      // Project filter
+      if (filterProject !== 'all') {
+        const campaignProjectId = campaign.projectId || '';
+        const filterProjectStr = String(filterProject);
+        const campaignProjectIdStr = String(campaignProjectId);
+        
+        if (campaignProjectIdStr !== filterProjectStr) return false;
+      }
+      
+      return true;
+    });
+  }, [localCampaigns, filterStatus, filterProject]);
+
   // Show loading state
   if (loading) {
     return (
@@ -150,8 +171,48 @@ export default function CampaignsPage() {
         )}
       </div>
 
+      {/* Filters */}
+      <Card hover={false}>
+        <div className="p-4 flex flex-wrap items-center gap-4">
+          <Filter size={20} className="text-gray-400" />
+          
+          <Select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'planned', label: 'Planned' },
+              { value: 'running', label: 'Running' },
+              { value: 'paused', label: 'Paused' },
+              { value: 'completed', label: 'Completed' },
+            ]}
+            className="w-40"
+          />
+
+          <Select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Projects' },
+              { value: '', label: 'No Project' },
+              ...projects.filter(p => p && p.id).map(p => ({ 
+                value: String(p.id), 
+                label: p.name 
+              }))
+            ]}
+            className="w-48"
+          />
+
+          <div className="flex-1" />
+          
+          <div className="text-sm text-gray-400">
+            Showing <span className="text-white font-semibold">{filteredCampaigns.length}</span> of {campaigns.length} campaigns
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {campaigns.map((campaign) => {
+        {filteredCampaigns.map((campaign) => {
           const project = projects.find(p => p.id === campaign.projectId);
           
           return (
@@ -180,7 +241,7 @@ export default function CampaignsPage() {
                     <span className="text-gray-400">Budget</span>
                     <span className="text-[#563EB7] font-semibold flex items-center gap-1">
                       <DollarSign size={14} />
-                      {campaign.budget.toLocaleString()}
+                      {Number(campaign.budget || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
@@ -226,14 +287,18 @@ export default function CampaignsPage() {
         })}
       </div>
 
-      {campaigns.length === 0 && (
+      {filteredCampaigns.length === 0 && (
         <Card>
           <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">No campaigns yet</p>
-            <Button onClick={() => handleOpenModal()}>
-              <Plus size={20} className="mr-2" />
-              Create Your First Campaign
-            </Button>
+            <p className="text-gray-400 mb-4">
+              {campaigns.length === 0 ? 'No campaigns yet' : 'No campaigns match your filters'}
+            </p>
+            {campaigns.length === 0 && canPerformAction(currentUser?.role, 'campaigns', 'create') && (
+              <Button onClick={() => handleOpenModal()}>
+                <Plus size={20} className="mr-2" />
+                Create Your First Campaign
+              </Button>
+            )}
           </div>
         </Card>
       )}
@@ -279,7 +344,7 @@ export default function CampaignsPage() {
             label="Project"
             value={formData.projectId}
             onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-            options={projects.map(p => ({ value: p.id, label: p.name }))}
+            options={projects.map(p => ({ value: String(p.id), label: p.name }))}
           />
           <div className="grid grid-cols-2 gap-4">
             <Select

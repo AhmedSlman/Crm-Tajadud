@@ -15,38 +15,48 @@ import {
   DollarSign,
   Users,
   Target,
-  FileText
+  FileText,
+  Filter
 } from 'lucide-react';
 
 export default function ReportsPage() {
   const { projects, tasks, campaigns, content, clients, users } = useData();
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedClient, setSelectedClient] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   const filteredProjects = useMemo(() => {
     let filtered = projects;
     if (selectedClient !== 'all') {
-      filtered = filtered.filter(p => p.clientId === selectedClient);
+      const selectedClientStr = String(selectedClient);
+      filtered = filtered.filter(p => String(p.clientId) === selectedClientStr);
     }
     if (selectedProject !== 'all') {
-      filtered = filtered.filter(p => p.id === selectedProject);
+      const selectedProjectStr = String(selectedProject);
+      filtered = filtered.filter(p => String(p.id) === selectedProjectStr);
+    }
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(p => p.status === selectedStatus);
     }
     return filtered;
-  }, [projects, selectedClient, selectedProject]);
+  }, [projects, selectedClient, selectedProject, selectedStatus]);
 
   const filteredTasks = useMemo(() => {
     if (selectedProject === 'all') return tasks;
-    return tasks.filter(t => t.projectId === selectedProject);
+    const selectedProjectStr = String(selectedProject);
+    return tasks.filter(t => String(t.projectId || '') === selectedProjectStr);
   }, [tasks, selectedProject]);
 
   const filteredCampaigns = useMemo(() => {
     if (selectedProject === 'all') return campaigns;
-    return campaigns.filter(c => c.projectId === selectedProject);
+    const selectedProjectStr = String(selectedProject);
+    return campaigns.filter(c => String(c.projectId || '') === selectedProjectStr);
   }, [campaigns, selectedProject]);
 
   const filteredContent = useMemo(() => {
     if (selectedProject === 'all') return content;
-    return content.filter(c => c.projectId === selectedProject);
+    const selectedProjectStr = String(selectedProject);
+    return content.filter(c => String(c.projectId || '') === selectedProjectStr);
   }, [content, selectedProject]);
 
   // Task Statistics
@@ -66,7 +76,7 @@ export default function ReportsPage() {
     total: filteredCampaigns.length,
     running: filteredCampaigns.filter(c => c.status === 'running').length,
     completed: filteredCampaigns.filter(c => c.status === 'completed').length,
-    totalBudget: filteredCampaigns.reduce((sum, c) => sum + c.budget, 0),
+    totalBudget: filteredCampaigns.reduce((sum, c) => sum + Number(c.budget || 0), 0),
   };
 
   // Content Statistics
@@ -142,9 +152,10 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <div className="p-4 flex items-center gap-4">
-          <span className="text-gray-400">Filter by:</span>
+      <Card hover={false}>
+        <div className="p-4 flex flex-wrap items-center gap-4">
+          <Filter size={20} className="text-gray-400" />
+          
           <Select
             value={selectedClient}
             onChange={(e) => {
@@ -153,10 +164,11 @@ export default function ReportsPage() {
             }}
             options={[
               { value: 'all', label: 'All Clients' },
-              ...clients.map(c => ({ value: c.id, label: c.name }))
+              ...clients.map(c => ({ value: String(c.id), label: c.name }))
             ]}
             className="w-48"
           />
+          
           <Select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
@@ -164,11 +176,30 @@ export default function ReportsPage() {
               { value: 'all', label: 'All Projects' },
               ...(selectedClient === 'all' 
                 ? projects 
-                : projects.filter(p => p.clientId === selectedClient)
-              ).map(p => ({ value: p.id, label: p.name }))
+                : projects.filter(p => String(p.clientId) === String(selectedClient))
+              ).map(p => ({ value: String(p.id), label: p.name }))
             ]}
             className="w-48"
           />
+          
+          <Select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'planned', label: 'Planned' },
+              { value: 'in-progress', label: 'In Progress' },
+              { value: 'completed', label: 'Completed' },
+              { value: 'on-hold', label: 'On Hold' },
+            ]}
+            className="w-40"
+          />
+
+          <div className="flex-1" />
+          
+          <div className="text-sm text-gray-400">
+            Showing <span className="text-white font-semibold">{filteredProjects.length}</span> of {projects.length} projects
+          </div>
         </div>
       </Card>
 
@@ -256,7 +287,7 @@ export default function ReportsPage() {
                 <span className="text-gray-400">Total Budget</span>
               </div>
               <span className="text-xl font-bold text-[#563EB7]">
-                ${campaignStats.totalBudget.toLocaleString()}
+                ${campaignStats.totalBudget.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </span>
             </div>
           </div>
