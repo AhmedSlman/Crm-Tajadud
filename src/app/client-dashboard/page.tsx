@@ -182,9 +182,11 @@ export default function ClientDashboardPage() {
                             <div className="flex-1">
                               <h4 className="font-medium text-white text-sm">{notif.title}</h4>
                               <p className="text-gray-400 text-xs mt-1">{notif.message}</p>
-                              <p className="text-gray-500 text-xs mt-2">
-                                {notif.createdAt ? formatDateTime(notif.createdAt) : 'N/A'}
-                              </p>
+                              {notif.createdAt && (
+                                <p className="text-gray-500 text-xs mt-2">
+                                  {formatDateTime(notif.createdAt)}
+                                </p>
+                              )}
                             </div>
                             {!notif.read && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -441,9 +443,11 @@ export default function ClientDashboardPage() {
                   {getNotificationIcon(notif.type)}
                   <div className="flex-1">
                     <p className="text-sm text-white font-medium">{notif.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {notif.createdAt ? formatDateTime(notif.createdAt) : 'N/A'}
-                    </p>
+                    {notif.createdAt && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatDateTime(notif.createdAt)}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

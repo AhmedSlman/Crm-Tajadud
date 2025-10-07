@@ -41,6 +41,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { isAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Filter nav items based on user role
   const filteredNavItems = navItems.filter(item => {
@@ -123,7 +129,8 @@ export default function Sidebar() {
         <ul className="space-y-2">
           {filteredNavItems.map((item, index) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            // Only check active state after component is mounted to prevent hydration mismatch
+            const isActive = mounted && pathname === item.href;
             
             return (
               <li key={item.name} className="animate-slideIn" style={{ animationDelay: `${index * 50}ms` }}>
