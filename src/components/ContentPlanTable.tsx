@@ -98,9 +98,9 @@ export default function ContentPlanTable({
           </thead>
           <tbody className="divide-y divide-[#563EB7]/10">
             {tasks.map((task, index) => {
-              const owner = users.find(u => u.id === task.createdBy);
-              const member = users.find(u => u.id === task.assignedTo);
-              const client = task.projectId ? clients.find(c => c.linkedProjects.includes(task.projectId!)) : null;
+              const owner = users.find(u => String(u.id) === String(task.createdBy));
+              const member = users.find(u => String(u.id) === String(task.assignedTo));
+              const client = task.projectId ? clients.find(c => c.linkedProjects && c.linkedProjects.some(pid => String(pid) === String(task.projectId))) : null;
               
               return (
                 <tr key={task.id} className="bg-gradient-to-br from-[#14102a] to-[#1a1333] hover:from-[#1a1333] hover:to-[#241a47] transition-all duration-300">

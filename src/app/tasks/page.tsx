@@ -147,9 +147,9 @@ export default function TasksPage() {
 
   const handleExport = () => {
     const exportData = filteredTasks.map(task => {
-      const assignee = users.find(u => u.id === task.assignedTo);
-      const creator = users.find(u => u.id === task.createdBy);
-      const project = projects.find(p => p.id === task.projectId);
+      const assignee = users.find(u => String(u.id) === String(task.assignedTo));
+      const creator = users.find(u => String(u.id) === String(task.createdBy));
+      const project = projects.find(p => String(p.id) === String(task.projectId));
       
       return {
         Title: task.title,
@@ -378,8 +378,8 @@ export default function TasksPage() {
               'Actions'
             ]}>
               {filteredTasks.filter(task => task && task.id).map((task) => {
-                const assignee = users.find(u => u.id === task.assignedTo);
-                const project = projects.find(p => p.id === task.projectId);
+                const assignee = users.find(u => String(u.id) === String(task.assignedTo));
+                const project = projects.find(p => String(p.id) === String(task.projectId));
                 const isSelected = selectedTasks.has(task.id);
                 
                 return (

@@ -51,7 +51,7 @@ export default function KanbanBoard({ tasks, users, onTaskClick, onStatusChange 
             {/* Task Cards */}
             <div className="flex-1 space-y-3 min-h-[400px]">
               {columnTasks.map((task, index) => {
-                const assignee = users.find(u => u.id === task.assignedTo);
+                const assignee = users.find(u => String(u.id) === String(task.assignedTo));
                 
                 return (
                   <div

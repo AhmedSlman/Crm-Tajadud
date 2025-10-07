@@ -372,7 +372,7 @@ export default function ReportsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h4 className="font-semibold text-white mb-1">{project.name}</h4>
-                    <p className="text-sm text-gray-400">{clients.find(c => c.id === project.clientId)?.name}</p>
+                    <p className="text-sm text-gray-400">{clients.find(c => String(c.id) === String(project.clientId))?.name}</p>
                   </div>
                   <Badge variant={project.status === 'completed' ? 'success' : project.status === 'in-progress' ? 'info' : 'default'}>
                     {project.status.replace('-', ' ')}

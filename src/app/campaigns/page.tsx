@@ -213,7 +213,7 @@ export default function CampaignsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCampaigns.map((campaign) => {
-          const project = projects.find(p => p.id === campaign.projectId);
+          const project = projects.find(p => String(p.id) === String(campaign.projectId));
           
           return (
             <Card key={campaign.id}>

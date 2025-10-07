@@ -135,17 +135,29 @@ export default function ProjectsPage() {
 
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
+      // Status filter
       if (filterStatus !== 'all' && project.status !== filterStatus) return false;
-      if (filterClient !== 'all' && project.clientId !== filterClient) return false;
+      
+      // Client filter
+      if (filterClient !== 'all') {
+        const projectClientId = project.clientId || '';
+        const filterClientStr = String(filterClient);
+        const projectClientIdStr = String(projectClientId);
+        
+        if (projectClientIdStr !== filterClientStr) return false;
+      }
+      
+      // Search filter
       if (searchQuery && !searchInObject(project, searchQuery)) return false;
+      
       return true;
     });
   }, [projects, filterStatus, filterClient, searchQuery]);
 
   const handleExport = () => {
     const exportData = filteredProjects.map(project => {
-      const client = clients.find(c => c.id === project.clientId);
-      const manager = users.find(u => u.id === project.projectManager);
+      const client = clients.find(c => String(c.id) === String(project.clientId));
+      const manager = users.find(u => String(u.id) === String(project.projectManager));
       
       return {
         Name: project.name,
@@ -230,7 +242,10 @@ export default function ProjectsPage() {
               onChange={(e) => setFilterClient(e.target.value)}
               options={[
                 { value: 'all', label: 'All Clients' },
-                ...clients.filter(c => c && c.id).map(c => ({ value: c.id, label: c.name }))
+                ...clients.filter(c => c && c.id).map(c => ({ 
+                  value: String(c.id), 
+                  label: c.name 
+                }))
               ]}
             />
           </div>
@@ -262,8 +277,8 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map((project) => {
-          const client = clients.find(c => c.id === project.clientId);
-          const manager = users.find(u => u.id === project.projectManager);
+          const client = clients.find(c => String(c.id) === String(project.clientId));
+          const manager = users.find(u => String(u.id) === String(project.projectManager));
           
           return (
             <Card key={project.id}>
@@ -363,7 +378,7 @@ export default function ProjectsPage() {
             label="Client"
             value={formData.clientId}
             onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-            options={clients.map(c => ({ value: c.id, label: c.name }))}
+            options={clients.map(c => ({ value: String(c.id), label: c.name }))}
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
@@ -395,7 +410,7 @@ export default function ProjectsPage() {
               label="Project Manager"
               value={formData.projectManager}
               onChange={(e) => setFormData({ ...formData, projectManager: e.target.value })}
-              options={activeUsers.map(u => ({ value: u.id, label: u.name }))}
+              options={activeUsers.map(u => ({ value: String(u.id), label: u.name }))}
             />
           </div>
           <Input
