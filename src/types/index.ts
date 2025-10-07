@@ -323,3 +323,55 @@ export type Message = {
   createdAt: string;
 };
 
+// My Work Types
+export type WorkItemType = 'task' | 'content';
+
+export type WorkItem = {
+  id: string;
+  title: string;
+  description?: string;
+  type: WorkItemType;
+  taskType?: TaskType;
+  contentType?: ContentType;
+  status: TaskStatus | ContentStatus;
+  priority: Priority;
+  progress: number;
+  dueDate: string;
+  publishDate?: string;
+  startDate: string;
+  projectId?: string;
+  projectName?: string;
+  isReel?: boolean;
+  createdAt: string;
+};
+
+export type MyWorkStats = {
+  total: number;
+  tasks: {
+    total: number;
+    todo: number;
+    inProgress: number;
+    review: number;
+    done: number;
+    delayed: number;
+    overdue: number;
+  };
+  content: {
+    total: number;
+    idea: number;
+    inProgress: number;
+    review: number;
+    approved: number;
+    scheduled: number;
+    published: number;
+  };
+  priority: {
+    urgent: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  dueToday: number;
+  dueThisWeek: number;
+};
+

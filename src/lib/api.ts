@@ -1,5 +1,5 @@
 // API Client للتعامل مع Laravel Backend
-import { AuthUser, LoginCredentials, RegisterData, ClientUser, User, Client, Project, Task, Campaign, Content, ClientProjectView, ClientNotification, Message } from '@/types';
+import { AuthUser, LoginCredentials, RegisterData, ClientUser, User, Client, Project, Task, Campaign, Content, ClientProjectView, ClientNotification, Message, WorkItem, MyWorkStats } from '@/types';
 import config from './config';
 
 const API_BASE_URL = config.api.baseUrl;
@@ -1226,6 +1226,49 @@ export const messagesAPI = {
   },
 };
 
+// My Work API
+export const myWorkAPI = {
+  // Get all work assigned to current user
+  async getAll(): Promise<WorkItem[]> {
+    const response = await fetch(`${API_BASE_URL}/my-work`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Get work statistics
+  async getStats(): Promise<MyWorkStats> {
+    const response = await fetch(`${API_BASE_URL}/my-work/stats`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Get upcoming work (due in next 7 days)
+  async getUpcoming(): Promise<{ tasks: Task[]; contents: Content[] }> {
+    const response = await fetch(`${API_BASE_URL}/my-work/upcoming`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Get overdue work
+  async getOverdue(): Promise<{ tasks: Task[]; contents: Content[] }> {
+    const response = await fetch(`${API_BASE_URL}/my-work/overdue`, {
+      method: 'GET',
+      headers: createHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+};
+
 // Health Check API
 export const healthAPI = {
   // فحص صحة النظام
@@ -1254,6 +1297,7 @@ export const api = {
   clientPortal: clientPortalAPI,
   permissions: permissionsAPI,
   messages: messagesAPI,
+  myWork: myWorkAPI,
   health: healthAPI,
 };
 

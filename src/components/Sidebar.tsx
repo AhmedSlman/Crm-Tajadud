@@ -19,11 +19,13 @@ import {
   UserCog,
   Shield,
   Menu,
-  X
+  X,
+  Briefcase
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, adminOnly: false },
+  { name: 'My Work', href: '/my-work', icon: Briefcase, adminOnly: false },
   { name: 'Clients', href: '/clients', icon: Users, adminOnly: false },
   { name: 'Projects', href: '/projects', icon: FolderKanban, adminOnly: false },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, adminOnly: false },
