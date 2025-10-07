@@ -17,11 +17,14 @@ import {
   FileText,
   Video,
   Image,
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from 'lucide-react';
 import { ClientUser, Project, Task, Content, Campaign } from '@/types';
 import api from '@/lib/api';
 import { getAvatarUrl } from '@/lib/config';
+import { formatDate, getDaysUntil } from '@/lib/utils';
+import ProjectChat from '@/components/ProjectChat';
 
 export default function ClientProjectDetailPage() {
   const router = useRouter();
@@ -33,8 +36,9 @@ export default function ClientProjectDetailPage() {
   const [projectTasks, setProjectTasks] = useState<Task[]>([]);
   const [projectContent, setProjectContent] = useState<Content[]>([]);
   const [projectCampaigns, setProjectCampaigns] = useState<Campaign[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'campaigns' | 'timeline'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'campaigns' | 'timeline' | 'messages'>('overview');
   const [loading, setLoading] = useState(true);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   useEffect(() => {
     // Get client user from localStorage (already validated by ClientProtectedRoute)
@@ -43,6 +47,11 @@ export default function ClientProjectDetailPage() {
       const client = JSON.parse(storedClient);
       setClientUser(client);
       loadProjectData();
+    }
+    
+    // Check if URL has #messages hash
+    if (window.location.hash === '#messages') {
+      setActiveTab('messages');
     }
   }, [projectId]);
 
@@ -66,6 +75,25 @@ export default function ClientProjectDetailPage() {
       setLoading(false);
     }
   };
+
+  // Fetch unread messages count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await api.messages.getUnreadCount(projectId, true);
+        setUnreadMessagesCount(response.unread_count || 0);
+      } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+      }
+    };
+
+    if (projectId) {
+      fetchUnreadCount();
+      // Refresh unread count every 15 seconds
+      const interval = setInterval(fetchUnreadCount, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [projectId, activeTab]);
 
   if (loading) {
     return (
@@ -157,13 +185,13 @@ export default function ClientProjectDetailPage() {
                 <div>
                   <p className="text-sm text-gray-400">Start Date</p>
                   <p className="text-white font-medium">
-                    {new Date(project.startDate).toLocaleDateString()}
+                    {formatDate(project.startDate)}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">End Date</p>
                   <p className="text-white font-medium">
-                    {new Date(project.endDate).toLocaleDateString()}
+                    {formatDate(project.endDate)}
                   </p>
                 </div>
               </div>
@@ -258,7 +286,7 @@ export default function ClientProjectDetailPage() {
                   <Calendar className="text-blue-400" size={24} />
                 </div>
                 <span className="text-2xl font-bold text-white">
-                  {Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
+                  {getDaysUntil(project.endDate)}
                 </span>
               </div>
               <h3 className="font-semibold text-white mb-1">Days Remaining</h3>
@@ -269,17 +297,18 @@ export default function ClientProjectDetailPage() {
 
         {/* Tabs */}
         <div className="mb-6">
-          <div className="flex space-x-1 bg-[#1a1333] p-1 rounded-xl">
+          <div className="flex space-x-1 bg-[#1a1333] p-1 rounded-xl overflow-x-auto">
             {[
-              { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'content', label: 'Content', icon: FileText },
-              { id: 'campaigns', label: 'Campaigns', icon: Target },
-              { id: 'timeline', label: 'Timeline', icon: Calendar },
+              { id: 'overview', label: 'Overview', icon: BarChart3, count: 0 },
+              { id: 'content', label: 'Content', icon: FileText, count: 0 },
+              { id: 'campaigns', label: 'Campaigns', icon: Target, count: 0 },
+              { id: 'messages', label: 'Messages', icon: MessageSquare, count: unreadMessagesCount },
+              { id: 'timeline', label: 'Timeline', icon: Calendar, count: 0 },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'content' | 'campaigns' | 'timeline')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all ${
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all whitespace-nowrap relative ${
                   activeTab === tab.id
                     ? 'bg-[#563EB7] text-white'
                     : 'text-gray-400 hover:text-white hover:bg-[#563EB7]/20'
@@ -287,6 +316,17 @@ export default function ClientProjectDetailPage() {
               >
                 <tab.icon size={18} />
                 <span className="font-medium">{tab.label}</span>
+                {tab.count > 0 && (
+                  <span className={`
+                    px-2 py-0.5 rounded-full text-xs font-bold
+                    ${tab.id === 'messages' && activeTab !== tab.id
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-white/20'
+                    }
+                  `}>
+                    {tab.count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -303,7 +343,7 @@ export default function ClientProjectDetailPage() {
                     <div className="flex-1">
                       <h4 className="font-medium text-white mb-1">{task.title}</h4>
                       <p className="text-sm text-gray-400">
-                        Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No deadline'}
+                        Due: {task.dueDate ? formatDate(task.dueDate) : 'No deadline'}
                       </p>
                     </div>
                     <Badge variant={getStatusColor(task.status)} size="sm">
@@ -372,7 +412,7 @@ export default function ClientProjectDetailPage() {
                     <div>
                       <p className="text-gray-400">Due Date</p>
                       <p className="text-white">
-                        {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'Not set'}
+                        {item.dueDate ? formatDate(item.dueDate) : 'Not set'}
                       </p>
                     </div>
                     <div>
@@ -414,15 +454,15 @@ export default function ClientProjectDetailPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-gray-400">Start Date</p>
-                      <p className="text-white">{new Date(campaign.startDate).toLocaleDateString()}</p>
+                      <p className="text-white">{formatDate(campaign.startDate)}</p>
                     </div>
                     <div>
                       <p className="text-gray-400">End Date</p>
-                      <p className="text-white">{new Date(campaign.endDate).toLocaleDateString()}</p>
+                      <p className="text-white">{formatDate(campaign.endDate)}</p>
                     </div>
                     <div>
                       <p className="text-gray-400">Budget</p>
-                      <p className="text-white">${campaign.budget.toLocaleString()}</p>
+                      <p className="text-white">${Number(campaign.budget || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div>
                       <p className="text-gray-400">Progress</p>
@@ -438,6 +478,18 @@ export default function ClientProjectDetailPage() {
                 </div>
               )}
             </div>
+          </Card>
+        )}
+
+        {activeTab === 'messages' && (
+          <Card title="Project Communication">
+            <ProjectChat
+              projectId={projectId}
+              isClient={true}
+              currentUserId={clientUser.id}
+              currentUserType="client"
+              onMessagesRead={() => setUnreadMessagesCount(0)}
+            />
           </Card>
         )}
 
@@ -465,7 +517,7 @@ export default function ClientProjectDetailPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-400">
-                        {new Date(item.date).toLocaleDateString()}
+                        {formatDate(item.date)}
                       </p>
                     </div>
                   </div>

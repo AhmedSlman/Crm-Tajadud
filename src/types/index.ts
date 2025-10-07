@@ -299,3 +299,27 @@ export type ActionPermission = {
   canPerform: boolean;
 };
 
+// Messages Types
+export type MessageSenderType = 'user' | 'client';
+
+export type MessageSender = {
+  id: string;
+  name: string;
+  avatar?: string;
+  role?: string;
+  company?: string;
+  type: MessageSenderType;
+};
+
+export type Message = {
+  id: string;
+  projectId: string;
+  message: string;
+  senderType: MessageSenderType;
+  sender: MessageSender | null;
+  attachments: Attachment[];
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+};
+

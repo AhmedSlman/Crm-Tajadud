@@ -14,7 +14,8 @@ import {
   CheckSquare, 
   Megaphone, 
   FileText, 
-  Video
+  Video,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -27,8 +28,9 @@ import ReelsPlanTable from '@/components/project/ReelsPlanTable';
 import CampaignContent from '@/components/project/CampaignContent';
 import SocialCalendarView from '@/components/project/SocialCalendarView';
 import MonthSelector from '@/components/MonthSelector';
+import ProjectChat from '@/components/ProjectChat';
 
-type TabType = 'tasks' | 'content-plan' | 'reels-plan' | 'campaigns' | 'social-calendar';
+type TabType = 'tasks' | 'content-plan' | 'reels-plan' | 'campaigns' | 'social-calendar' | 'messages';
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -53,6 +55,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const [projectContent, setProjectContent] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   // Fetch project-specific data
   useEffect(() => {
@@ -87,6 +90,25 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const refreshProjectData = () => {
     setRefreshKey(prev => prev + 1);
   };
+
+  // Fetch unread messages count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await api.messages.getUnreadCount(projectId, false);
+        setUnreadMessagesCount(response.unread_count || 0);
+      } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+      }
+    };
+
+    if (projectId) {
+      fetchUnreadCount();
+      // Refresh unread count every 15 seconds
+      const interval = setInterval(fetchUnreadCount, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [projectId, activeTab]);
 
   
   // Show loading state
@@ -139,6 +161,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     { id: 'reels-plan' as TabType, label: 'Reels Plan', icon: Video, count: monthReels.length },
     { id: 'campaigns' as TabType, label: 'Campaigns', icon: Megaphone, count: projectCampaigns.length },
     { id: 'social-calendar' as TabType, label: 'Social Calendar', icon: Calendar, count: 0 },
+    { id: 'messages' as TabType, label: 'Messages', icon: MessageSquare, count: unreadMessagesCount },
   ];
 
   return (
@@ -192,7 +215,12 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
               {tab.count > 0 && (
                 <span className={`
                   px-2 py-0.5 rounded-full text-xs font-bold
-                  ${isActive ? 'bg-white/20' : 'bg-[#563EB7]/20 text-[#563EB7]'}
+                  ${tab.id === 'messages' && !isActive
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : isActive 
+                    ? 'bg-white/20' 
+                    : 'bg-[#563EB7]/20 text-[#563EB7]'
+                  }
                 `}>
                   {tab.count}
                 </span>
@@ -247,6 +275,16 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
             projectId={projectId}
             content={projectContent}
             onRefresh={refreshProjectData}
+          />
+        )}
+        
+        {activeTab === 'messages' && (
+          <ProjectChat
+            projectId={projectId}
+            isClient={false}
+            currentUserId={user?.id}
+            currentUserType="user"
+            onMessagesRead={() => setUnreadMessagesCount(0)}
           />
         )}
       </div>

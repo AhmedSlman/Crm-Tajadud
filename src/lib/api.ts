@@ -1,5 +1,5 @@
 // API Client للتعامل مع Laravel Backend
-import { AuthUser, LoginCredentials, RegisterData, ClientUser, User, Client, Project, Task, Campaign, Content, ClientProjectView, ClientNotification } from '@/types';
+import { AuthUser, LoginCredentials, RegisterData, ClientUser, User, Client, Project, Task, Campaign, Content, ClientProjectView, ClientNotification, Message } from '@/types';
 import config from './config';
 
 const API_BASE_URL = config.api.baseUrl;
@@ -1142,6 +1142,90 @@ export const permissionsAPI = {
   },
 };
 
+// Messages API
+export const messagesAPI = {
+  // Get all messages for a project
+  async getProjectMessages(projectId: string, isClient = false): Promise<Message[]> {
+    const endpoint = isClient 
+      ? `${API_BASE_URL}/client-portal/projects/${projectId}/messages`
+      : `${API_BASE_URL}/projects/${projectId}/messages`;
+      
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: createHeaders(isClient),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Send a new message
+  async sendMessage(projectId: string, message: string, attachments: string[] = [], isClient = false): Promise<{ message: string; data: Message }> {
+    const endpoint = isClient
+      ? `${API_BASE_URL}/client-portal/projects/${projectId}/messages`
+      : `${API_BASE_URL}/projects/${projectId}/messages`;
+      
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: createHeaders(isClient),
+      body: JSON.stringify({ message, attachments }),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Mark message as read
+  async markAsRead(messageId: string, isClient = false): Promise<{ message: string }> {
+    const endpoint = isClient
+      ? `${API_BASE_URL}/client-portal/messages/${messageId}/read`
+      : `${API_BASE_URL}/messages/${messageId}/read`;
+      
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: createHeaders(isClient),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Mark all messages as read for a project
+  async markAllAsRead(projectId: string, isClient = false): Promise<{ message: string; count: number }> {
+    const endpoint = isClient
+      ? `${API_BASE_URL}/client-portal/projects/${projectId}/messages/read-all`
+      : `${API_BASE_URL}/projects/${projectId}/messages/read-all`;
+      
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: createHeaders(isClient),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Get unread count for a project
+  async getUnreadCount(projectId: string, isClient = false): Promise<{ unread_count: number }> {
+    const endpoint = isClient
+      ? `${API_BASE_URL}/client-portal/projects/${projectId}/messages/unread-count`
+      : `${API_BASE_URL}/projects/${projectId}/messages/unread-count`;
+      
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: createHeaders(isClient),
+    });
+
+    return handleResponse(response);
+  },
+
+  // Delete a message (only sender can delete)
+  async deleteMessage(messageId: string, isClient = false): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: createHeaders(isClient),
+    });
+
+    await handleResponse(response);
+  },
+};
+
 // Health Check API
 export const healthAPI = {
   // فحص صحة النظام
@@ -1169,6 +1253,7 @@ export const api = {
   calendar: calendarAPI,
   clientPortal: clientPortalAPI,
   permissions: permissionsAPI,
+  messages: messagesAPI,
   health: healthAPI,
 };
 

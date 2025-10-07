@@ -24,6 +24,7 @@ import {
 import { ClientUser, ClientProjectView, ClientNotification } from '@/types';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default function ClientDashboardPage() {
   const router = useRouter();
@@ -182,7 +183,7 @@ export default function ClientDashboardPage() {
                               <h4 className="font-medium text-white text-sm">{notif.title}</h4>
                               <p className="text-gray-400 text-xs mt-1">{notif.message}</p>
                               <p className="text-gray-500 text-xs mt-2">
-                                {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'N/A'}
+                                {notif.createdAt ? formatDateTime(notif.createdAt) : 'N/A'}
                               </p>
                             </div>
                             {!notif.read && (
@@ -237,7 +238,7 @@ export default function ClientDashboardPage() {
             <div className="text-left sm:text-right">
               <p className="text-sm text-gray-400">Last login</p>
               <p className="text-white font-medium">
-                {clientUser.lastLogin ? new Date(clientUser.lastLogin).toLocaleDateString() : 'Today'}
+                {clientUser.lastLogin ? formatDateTime(clientUser.lastLogin) : 'Today'}
               </p>
             </div>
           </div>
@@ -411,11 +412,21 @@ export default function ClientDashboardPage() {
                 Have questions about your projects or need support?
               </p>
               <div className="space-y-3">
-                <Button variant="secondary" className="w-full justify-between">
+                <Button 
+                  variant="secondary" 
+                  className="w-full justify-between"
+                  onClick={() => {
+                    if (clientProjects.length > 0) {
+                      router.push(`/client-project/${clientProjects[0].id}#messages`);
+                    } else {
+                      toast.info('No projects available');
+                    }
+                  }}
+                >
                   Contact Project Manager
                   <ArrowRight size={16} />
                 </Button>
-                <Button variant="secondary" className="w-full justify-between">
+                <Button variant="secondary" className="w-full justify-between" disabled>
                   View Help Center
                   <ExternalLink size={16} />
                 </Button>
@@ -431,7 +442,7 @@ export default function ClientDashboardPage() {
                   <div className="flex-1">
                     <p className="text-sm text-white font-medium">{notif.title}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'N/A'}
+                      {notif.createdAt ? formatDateTime(notif.createdAt) : 'N/A'}
                     </p>
                   </div>
                 </div>
