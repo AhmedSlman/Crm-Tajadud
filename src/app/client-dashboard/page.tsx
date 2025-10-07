@@ -428,7 +428,11 @@ export default function ClientDashboardPage() {
                   Contact Project Manager
                   <ArrowRight size={16} />
                 </Button>
-                <Button variant="secondary" className="w-full justify-between" disabled>
+                <Button 
+                  variant="secondary" 
+                  className="w-full justify-between"
+                  onClick={() => router.push('/client-help-center')}
+                >
                   View Help Center
                   <ExternalLink size={16} />
                 </Button>

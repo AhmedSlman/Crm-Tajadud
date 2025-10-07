@@ -18,7 +18,8 @@ import {
   Video,
   Image,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  HelpCircle
 } from 'lucide-react';
 import { ClientUser, Project, Task, Content, Campaign } from '@/types';
 import api from '@/lib/api';
@@ -166,6 +167,14 @@ export default function ClientProjectDetailPage() {
           </div>
           
           <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => router.push('/client-help-center')}
+            >
+              <HelpCircle size={16} className="mr-2" />
+              Help
+            </Button>
             <Badge variant={getStatusColor(project.status)}>
               {project.status.replace('-', ' ')}
             </Badge>
