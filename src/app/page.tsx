@@ -9,6 +9,7 @@ import Image from 'next/image';
 import StockPattern from '@/assets/stock.svg';
 import { Users, FolderKanban, CheckSquare, Megaphone } from 'lucide-react';
 import Link from 'next/link';
+import { formatDate } from '@/lib/utils';
 
 export default function Dashboard() {
   return (
@@ -205,7 +206,7 @@ function DashboardContent() {
                     <div className="mt-3 flex items-center justify-between text-xs">
                       <span className="text-gray-400 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-[#563EB7] rounded-full" />
-                        Due: {new Date(project.endDate).toLocaleDateString()}
+                        Due: {formatDate(project.endDate)}
                       </span>
                       <span className="text-[#563EB7] font-semibold">{project.progress}%</span>
                     </div>
@@ -273,7 +274,7 @@ function DashboardContent() {
                     <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-[#563EB7]/10">
                       <span className="text-gray-400 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-[#563EB7] rounded-full" />
-                        Due: {new Date(task.dueDate).toLocaleDateString()}
+                        Due: {formatDate(task.dueDate)}
                       </span>
                     </div>
                   </div>

@@ -5,6 +5,7 @@ import { useData } from '@/context/DataContext';
 import { Content } from '@/types';
 import { FileText, Video, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDateString, getPublishDateString, formatDate } from '@/lib/utils';
 
 type SocialCalendarViewProps = {
   month: Date;
@@ -48,11 +49,10 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
   );
 
   const getContentForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getDateString(date);
     const items = calendarContent.filter(c => {
       if (!c.publishDate) return false;
-      // Handle both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS" formats
-      const pubDate = c.publishDate.split(' ')[0].split('T')[0];
+      const pubDate = getPublishDateString(c.publishDate);
       return pubDate === dateStr;
     });
     return items;
@@ -85,7 +85,7 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
   const handleDrop = async (date: Date) => {
     if (!draggedItem) return;
 
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getDateString(date);
     
     // Optimistic update
     const updatedContent = localContent.map(c =>
@@ -98,7 +98,7 @@ export default function SocialCalendarView({ month, projectId, content, onRefres
     setLocalContent(updatedContent);
     
     toast.success(`${draggedItem.title} scheduled! 📅`, {
-      description: `Will be published on ${new Date(dateStr).toLocaleDateString()}`,
+      description: `Will be published on ${formatDate(dateStr)}`,
     });
     setDraggedItem(null);
     

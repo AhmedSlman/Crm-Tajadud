@@ -5,6 +5,7 @@ import { useData } from '@/context/DataContext';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
 import { ChevronLeft, ChevronRight, CheckCircle, Edit, Clock } from 'lucide-react';
+import { getDateString, getPublishDateString } from '@/lib/utils';
 
 export default function CalendarPage() {
   const { content, tasks } = useData();
@@ -34,16 +35,16 @@ export default function CalendarPage() {
   };
 
   const getItemsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getDateString(date);
     
     const contentItems = content.filter(item => {
-      const publishDate = item.publishDate ? item.publishDate.split('T')[0] : null;
-      const dueDate = item.dueDate.split('T')[0];
+      const publishDate = getPublishDateString(item.publishDate);
+      const dueDate = getPublishDateString(item.dueDate);
       return publishDate === dateStr || dueDate === dateStr;
     });
 
     const taskItems = tasks.filter(item => {
-      const dueDate = item.dueDate.split('T')[0];
+      const dueDate = getPublishDateString(item.dueDate);
       return dueDate === dateStr;
     });
 

@@ -10,6 +10,7 @@ import Input from '@/components/Input';
 import Select from '@/components/Select';
 import { Plus, Edit2, Check, X, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { getTodayString, getTomorrowString } from '@/lib/utils';
 
 type ContentPlanTableProps = {
   content: Content[];
@@ -60,10 +61,8 @@ export default function ContentPlanTable({
     // Don't update if only data changed (preserve optimistic updates)
   }, [content, deletedIds]);
   
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const today = getTodayString();
+  const tomorrowStr = getTomorrowString();
   
   const [formData, setFormData] = useState({
     title: '',

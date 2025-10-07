@@ -9,6 +9,7 @@ import Input, { Textarea } from '@/components/Input';
 import Select from '@/components/Select';
 import { Plus, User, Calendar, GripVertical, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getTodayString, getTomorrowString } from '@/lib/utils';
 import {
   DndContext,
   DragEndEvent,
@@ -222,10 +223,8 @@ export default function TasksKanban({ tasks: allTasks, projectId, month, onRefre
   }, [allTasks]);
   
   // Get today's date and tomorrow in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const today = getTodayString();
+  const tomorrowStr = getTomorrowString();
   
   const [formData, setFormData] = useState({
     title: '',
